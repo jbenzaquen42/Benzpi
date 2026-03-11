@@ -32,6 +32,14 @@
  * The session ID is shown in the tool's live progress and final output,
  * and also available in the tool result details for other agents to use.
  *
+ * ## Parallel Mode
+ *
+ * Pass `tasks: [{prompt, model?, outputFile?, ...}, ...]` to run up to 8 Claude
+ * sessions concurrently (max 3 at a time). Each result is written to its
+ * outputFile (auto-generated as .pi/claude-parallel-N.md if omitted).
+ * A combined overlay panel shows all tasks' status in real time.
+ * Returns a summary of output paths, costs, and turn counts.
+ *
  * ## Concurrency
  *
  * Multiple claude tool calls can run in parallel. Each invocation has its
@@ -123,6 +131,116 @@ interface OverlayState {
 
 /** Maximum lines of streaming output to show in the overlay */
 const OVERLAY_MAX_LINES = 40;
+
+/** Maximum concurrent Claude sessions in parallel mode */
+const MAX_PARALLEL_CONCURRENT = 3;
+
+/** Hard cap on tasks array length */
+const MAX_PARALLEL_TASKS = 8;
+
+async function mapWithConcurrencyLimit<TIn, TOut>(
+	items: TIn[],
+	concurrency: number,
+	fn: (item: TIn, index: number) => Promise<TOut>,
+): Promise<TOut[]> {
+	if (items.length === 0) return [];
+	const limit = Math.max(1, Math.min(concurrency, items.length));
+	const results: TOut[] = new Array(items.length);
+	let nextIndex = 0;
+	const workers = Array.from({ length: limit }, async () => {
+		while (true) {
+			const current = nextIndex++;
+			if (current >= items.length) return;
+			results[current] = await fn(items[current], current);
+		}
+	});
+	await Promise.all(workers);
+	return results;
+}
+
+interface ParallelTaskState {
+	prompt: string;
+	phase: "pending" | "thinking" | "tools" | "responding" | "done" | "error";
+	cost: number;
+}
+
+interface ParallelOverlayState {
+	tasks: ParallelTaskState[];
+	startTime: number;
+}
+
+class ParallelClaudePanel implements Component {
+	constructor(
+		private state: ParallelOverlayState,
+		private theme: Theme,
+	) {}
+
+	render(width: number): string[] {
+		const th = this.theme;
+		const innerW = width - 4;
+		if (innerW < 10) return [];
+
+		const lines: string[] = [];
+		const pad = (content: string) => {
+			const vis = visibleWidth(content);
+			const padding = Math.max(0, innerW - vis);
+			return th.fg("border", "│") + " " + content + " ".repeat(padding) + " " + th.fg("border", "│");
+		};
+
+		// ── Top border ──
+		const elapsed = formatDuration(Date.now() - this.state.startTime);
+		const title = ` Claude Code ×${this.state.tasks.length}  ${elapsed} `;
+		const titleStyled = th.fg("accent", title);
+		const borderRemaining = Math.max(0, innerW - title.length);
+		const left = Math.floor(borderRemaining / 2);
+		const right = borderRemaining - left;
+		lines.push(th.fg("border", "╭" + "─".repeat(left)) + titleStyled + th.fg("border", "─".repeat(right) + "╮"));
+
+		// ── Summary line ──
+		const done = this.state.tasks.filter((t) => t.phase === "done" || t.phase === "error").length;
+		const totalCost = this.state.tasks.reduce((s, t) => s + t.cost, 0);
+		let statusLine = th.fg("muted", `${done}/${this.state.tasks.length} done`);
+		if (totalCost > 0) statusLine += th.fg("dim", `  $${totalCost.toFixed(4)} total`);
+		lines.push(pad(statusLine));
+		lines.push(th.fg("border", "├" + "─".repeat(innerW + 2) + "┤"));
+
+		// ── Per-task rows ──
+		for (let i = 0; i < this.state.tasks.length; i++) {
+			const t = this.state.tasks[i];
+			let icon: string;
+			if (t.phase === "done") icon = th.fg("success", "✓");
+			else if (t.phase === "error") icon = th.fg("error", "✗");
+			else if (t.phase === "pending") icon = th.fg("dim", "○");
+			else icon = th.fg("warning", "●");
+
+			const phaseStr =
+				t.phase === "thinking" ? "thinking"
+				: t.phase === "tools" ? "working"
+				: t.phase === "responding" ? "responding"
+				: "";
+			const costStr = t.cost > 0 ? `$${t.cost.toFixed(4)}` : "";
+			const right = [phaseStr && th.fg("muted", phaseStr), costStr && th.fg("dim", costStr)]
+				.filter(Boolean)
+				.join("  ");
+
+			const prefix = icon + " " + th.fg("dim", `[${i + 1}] `);
+			const prefixW = visibleWidth(prefix);
+			const rightW = visibleWidth(right);
+			const available = innerW - prefixW - rightW - (right ? 2 : 0);
+			const promptDisplay =
+				t.prompt.length > available && available > 5
+					? t.prompt.slice(0, available - 1) + "…"
+					: t.prompt.slice(0, Math.max(0, available));
+			const gap = Math.max(0, innerW - prefixW - visibleWidth(promptDisplay) - rightW);
+			lines.push(pad(prefix + th.fg("toolOutput", promptDisplay) + " ".repeat(gap) + right));
+		}
+
+		lines.push(th.fg("border", "╰" + "─".repeat(innerW + 2) + "╯"));
+		return lines;
+	}
+
+	invalidate(): void {}
+}
 
 /**
  * Non-capturing overlay panel that streams Claude Code output.
@@ -246,7 +364,7 @@ export default function (pi: ExtensionAPI) {
 			`Set resumeSessionId to continue a previous session (e.g. after cancellation or for follow-up questions).`,
 
 		parameters: Type.Object({
-			prompt: Type.String({ description: "The task or question for Claude Code" }),
+			prompt: Type.Optional(Type.String({ description: "The task or question for Claude Code (single mode)" })),
 			model: Type.Optional(
 				Type.String({
 					description: 'Model to use (default: "sonnet"). Examples: "sonnet", "opus", "haiku"',
@@ -279,10 +397,315 @@ export default function (pi: ExtensionAPI) {
 						"Use this to retry cancelled runs or ask follow-up questions.",
 				})
 			),
+			tasks: Type.Optional(
+				Type.Array(
+					Type.Object({
+						prompt: Type.String({ description: "The task or question for this Claude Code instance" }),
+						model: Type.Optional(Type.String({ description: 'Model to use (default: "sonnet")' })),
+						maxTurns: Type.Optional(Type.Number({ description: "Maximum agentic turns (default: 30)" })),
+						systemPrompt: Type.Optional(Type.String({ description: "Additional system prompt to append" })),
+						outputFile: Type.Optional(
+							Type.String({
+								description:
+									"File to write the result to. Auto-generated as .pi/claude-parallel-N.md if omitted.",
+							})
+						),
+						resumeSessionId: Type.Optional(Type.String({ description: "Resume a previous session by ID" })),
+					}),
+					{
+						description:
+							`Run multiple Claude Code sessions in parallel (max ${MAX_PARALLEL_CONCURRENT} concurrent, max ${MAX_PARALLEL_TASKS} total). ` +
+							"Each result is written to its outputFile. Returns a summary of all paths and costs.",
+					}
+				)
+			),
 		}),
 
 		async execute(_toolCallId, params, signal, onUpdate, ctx) {
+			// ── Parallel mode ──
+			if (params.tasks && params.tasks.length > 0) {
+				const tasks = params.tasks;
+
+				if (tasks.length > MAX_PARALLEL_TASKS) {
+					return {
+						content: [
+							{
+								type: "text",
+								text: `Too many parallel tasks (${tasks.length}). Max is ${MAX_PARALLEL_TASKS}.`,
+							},
+						],
+						details: { mode: "parallel", tasks: [], totalCost: 0, elapsed: 0 },
+					};
+				}
+
+				const parallelStartTime = Date.now();
+				const now = Date.now();
+
+				// Resolve output files (auto-generate if not specified)
+				const resolvedTasks = tasks.map((t, i) => ({
+					...t,
+					outputFile: t.outputFile ?? `.pi/claude-parallel-${i + 1}-${now}.md`,
+				}));
+
+				// Overlay state (one per task)
+				const overlayState: ParallelOverlayState = {
+					tasks: resolvedTasks.map((t) => ({
+						prompt: t.prompt.length > 55 ? t.prompt.slice(0, 55) + "…" : t.prompt,
+						phase: "pending" as const,
+						cost: 0,
+					})),
+					startTime: parallelStartTime,
+				};
+
+				// ── Parallel overlay (interactive, one at a time) ──
+				const showOverlay = ctx.hasUI && !overlayActive;
+				let overlayTui: TUI | null = null;
+				let overlayCloseFn: (() => void) | null = null;
+				let overlayPromise: Promise<void> | null = null;
+
+				if (showOverlay) {
+					overlayActive = true;
+					overlayPromise = ctx.ui.custom<void>(
+						(tui, theme, _kb, done) => {
+							overlayTui = tui;
+							overlayCloseFn = () => done();
+							return new ParallelClaudePanel(overlayState, theme);
+						},
+						{
+							overlay: true,
+							overlayOptions: {
+								nonCapturing: true,
+								anchor: "right-center",
+								width: "50%",
+								minWidth: 40,
+								maxHeight: "90%",
+								margin: { right: 1, top: 1, bottom: 1 },
+								visible: (termWidth) => termWidth >= 100,
+							},
+						},
+					);
+				}
+
+				interface ParallelTaskResult {
+					prompt: string;
+					outputFile: string;
+					cost: number;
+					turns: number;
+					elapsed: number;
+					sessionId: string;
+					sessionModel: string;
+					toolUses: string[];
+					success: boolean;
+					error?: string;
+				}
+
+				const taskResults: ParallelTaskResult[] = resolvedTasks.map((t) => ({
+					prompt: t.prompt,
+					outputFile: t.outputFile!,
+					cost: 0,
+					turns: 0,
+					elapsed: 0,
+					sessionId: "",
+					sessionModel: "",
+					toolUses: [],
+					success: false,
+				}));
+
+				const emitParallelUpdate = () => {
+					if (!onUpdate) return;
+					const running = taskResults.filter((r) => !r.success && !r.error).length;
+					const done = taskResults.filter((r) => r.success || r.error).length;
+					onUpdate({
+						content: [
+							{
+								type: "text",
+								text: `Parallel: ${done}/${taskResults.length} done, ${running} running…`,
+							},
+						],
+						details: {
+							mode: "parallel",
+							tasks: taskResults.map((r) => ({ ...r })),
+							totalCost: taskResults.reduce((s, r) => s + r.cost, 0),
+							elapsed: Date.now() - parallelStartTime,
+						},
+					});
+				};
+
+				emitParallelUpdate();
+
+				await mapWithConcurrencyLimit(resolvedTasks, MAX_PARALLEL_CONCURRENT, async (task, index) => {
+					const taskStartTime = Date.now();
+					const taskAbort = new AbortController();
+					if (signal) signal.addEventListener("abort", () => taskAbort.abort());
+
+					overlayState.tasks[index].phase = "thinking";
+					overlayTui?.requestRender();
+
+					const taskOptions: Record<string, any> = {
+						abortController: taskAbort,
+						cwd: ctx.cwd,
+						maxTurns: task.maxTurns ?? 30,
+						permissionMode: "bypassPermissions",
+						persistSession: true,
+						includePartialMessages: true,
+					};
+					if (task.model) taskOptions.model = task.model;
+					if (task.systemPrompt) taskOptions.appendSystemPrompt = task.systemPrompt;
+					if (task.resumeSessionId) taskOptions.resume = task.resumeSessionId;
+
+					let fullText = "";
+					let cost = 0;
+					let turns = 0;
+					let sessionId = "";
+					let sessionModel = "";
+					let toolUses: string[] = [];
+
+					try {
+						const conversation = query({ prompt: task.prompt, options: taskOptions });
+
+						for await (const message of conversation) {
+							if (signal?.aborted) break;
+
+							if (message.type === "system" && (message as any).subtype === "init") {
+								sessionId = (message as any).session_id ?? "";
+								sessionModel = (message as any).model ?? "";
+								continue;
+							}
+
+							if (message.type === "stream_event") {
+								const delta = (message as any).event?.delta;
+								if (delta?.type === "text_delta" && delta.text) {
+									fullText += delta.text;
+									if (overlayState.tasks[index].phase !== "responding") {
+										overlayState.tasks[index].phase = "responding";
+										overlayTui?.requestRender();
+									}
+								}
+								continue;
+							}
+
+							if (message.type === "assistant") {
+								for (const block of (message as any).message?.content ?? []) {
+									if (block.type === "tool_use") {
+										toolUses.push(block.name);
+										overlayState.tasks[index].phase = "tools";
+										overlayTui?.requestRender();
+									}
+								}
+							}
+
+							if (message.type === "result") {
+								cost = (message as any).total_cost_usd ?? 0;
+								turns = (message as any).num_turns ?? 0;
+								if (!sessionId) sessionId = (message as any).session_id ?? "";
+								if (!fullText && (message as any).result) {
+									fullText = (message as any).result;
+								}
+							}
+						}
+
+						// Write to outputFile
+						const outPath = task.outputFile!.startsWith("/")
+							? task.outputFile!
+							: join(ctx.cwd, task.outputFile!);
+						const outDir = join(outPath, "..");
+						mkdirSync(outDir, { recursive: true });
+						writeFileSync(outPath, fullText || "(no output)");
+
+						taskResults[index] = {
+							...taskResults[index],
+							cost,
+							turns,
+							elapsed: Date.now() - taskStartTime,
+							sessionId,
+							sessionModel,
+							toolUses,
+							success: true,
+						};
+
+						overlayState.tasks[index].phase = "done";
+						overlayState.tasks[index].cost = cost;
+						overlayTui?.requestRender();
+
+						if (sessionId) {
+							indexSession(ctx.cwd, {
+								sessionId,
+								prompt: task.prompt.slice(0, 200),
+								model: sessionModel || task.model,
+								timestamp: new Date().toISOString(),
+								elapsed: Date.now() - taskStartTime,
+								cost,
+								turns,
+							});
+						}
+					} catch (err: any) {
+						taskResults[index] = {
+							...taskResults[index],
+							elapsed: Date.now() - taskStartTime,
+							cost,
+							turns,
+							sessionId,
+							sessionModel,
+							toolUses,
+							success: false,
+							error: err.message ?? "Unknown error",
+						};
+						overlayState.tasks[index].phase = "error";
+						overlayState.tasks[index].cost = cost;
+						overlayTui?.requestRender();
+					}
+
+					emitParallelUpdate();
+				});
+
+				// ── Close overlay ──
+				if (showOverlay) {
+					overlayCloseFn?.();
+					if (overlayPromise) await overlayPromise;
+					overlayActive = false;
+				}
+
+				const elapsed = Date.now() - parallelStartTime;
+				const successCount = taskResults.filter((r) => r.success).length;
+				const totalCost = taskResults.reduce((s, r) => s + r.cost, 0);
+
+				const lines = [
+					`Parallel: ${successCount}/${taskResults.length} succeeded  $${totalCost.toFixed(4)} total  ${formatDuration(elapsed)}`,
+					"",
+					...taskResults.map((r, i) => {
+						const status = r.success ? "✓" : "✗";
+						let line = `${status} [${i + 1}] ${r.outputFile}`;
+						if (r.success) {
+							line += `  ${r.turns} turns  $${r.cost.toFixed(4)}  ${formatDuration(r.elapsed)}`;
+						} else {
+							line += `  ERROR: ${r.error}`;
+						}
+						return line;
+					}),
+				];
+
+				return {
+					content: [{ type: "text", text: lines.join("\n") }],
+					details: {
+						mode: "parallel",
+						tasks: taskResults,
+						totalCost,
+						elapsed,
+					},
+				};
+			}
+
+			// ── Single mode ──
 			const { prompt, model, maxTurns, systemPrompt, outputFile, resumeSessionId } = params;
+
+			if (!prompt) {
+				return {
+					content: [{ type: "text", text: "Error: either `prompt` (single mode) or `tasks` (parallel mode) is required." }],
+					details: {},
+					isError: true,
+				};
+			}
+
 			const startTime = Date.now();
 
 			const abortController = new AbortController();
@@ -542,6 +965,18 @@ export default function (pi: ExtensionAPI) {
 
 		renderCall(args, theme) {
 			let text = theme.fg("toolTitle", theme.bold("claude "));
+
+			if (args.tasks && args.tasks.length > 0) {
+				text += theme.fg("accent", `parallel (${args.tasks.length} tasks)`);
+				for (const t of args.tasks.slice(0, 3)) {
+					const preview = t.prompt.length > 60 ? t.prompt.slice(0, 60) + "…" : t.prompt;
+					text += "\n  " + theme.fg("dim", `"${preview}"`);
+					if (t.outputFile) text += theme.fg("dim", ` → ${t.outputFile}`);
+				}
+				if (args.tasks.length > 3) text += `\n  ${theme.fg("muted", `… +${args.tasks.length - 3} more`)}`;
+				return new Text(text, 0, 0);
+			}
+
 			if (args.resumeSessionId) {
 				text += theme.fg("warning", "resume ");
 				text += theme.fg("dim", args.resumeSessionId.slice(0, 8) + "… ");
@@ -555,6 +990,39 @@ export default function (pi: ExtensionAPI) {
 
 		renderResult(result, { expanded, isPartial }, theme) {
 			const details = result.details as any;
+
+			// ── Parallel result ──
+			if (details?.mode === "parallel" && !isPartial) {
+				const tasks = (details.tasks ?? []) as any[];
+				const successCount = tasks.filter((t: any) => t.success).length;
+				const failCount = tasks.filter((t: any) => t.error).length;
+				const totalCost = details.totalCost ?? 0;
+				const elapsed = details.elapsed ?? 0;
+
+				const icon =
+					failCount > 0
+						? theme.fg("warning", "◐")
+						: theme.fg("success", "✓");
+				let header =
+					icon +
+					" " +
+					theme.fg("toolTitle", theme.bold("claude parallel ")) +
+					theme.fg("accent", `${successCount}/${tasks.length} tasks`) +
+					theme.fg("dim", `  $${totalCost.toFixed(4)}  ${formatDuration(elapsed)}`);
+
+				for (const t of tasks) {
+					const tIcon = t.success ? theme.fg("success", "✓") : theme.fg("error", "✗");
+					header += "\n  " + tIcon + " " + theme.fg("accent", t.outputFile ?? "(no file)");
+					if (t.success) {
+						header +=
+							theme.fg("dim", `  ${t.turns} turns  $${t.cost.toFixed(4)}  ${formatDuration(t.elapsed)}`);
+					} else if (t.error) {
+						header += theme.fg("error", `  ${t.error}`);
+					}
+				}
+
+				return new Text(header, 0, 0);
+			}
 
 			// ── Live progress while streaming ──
 			if (isPartial) {
