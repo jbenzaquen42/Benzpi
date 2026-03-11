@@ -40,6 +40,22 @@ Avoid over-engineering. Only make changes that are directly requested or clearly
 
 **The right amount of complexity is the minimum needed for the current task.**
 
+### Think Forward
+
+There is only a way forward. Backward compatibility is a concern for libraries and SDKs — not for products. When building a product, **never hedge with fallback code, legacy shims, or defensive workarounds** for situations that no longer exist or may never occur. That's wasted cycles.
+
+Instead, ask: *what is the cleanest solution if we had no history to protect?* Then build that.
+
+The best solutions feel almost obvious in hindsight — so logically simple and well-fitted to the problem that you wonder why it wasn't always done this way. That's the target. If your design needs extensive fallbacks, feature flags for old behavior, or compatibility layers for hypothetical consumers, stop and rethink. Complexity that serves the past is dead weight.
+
+**Rules:**
+- No fallback code "just in case" — if it's not needed now, don't write it
+- No backwards-compat shims in product code (libraries/SDKs are the exception)
+- No defensive handling of deprecated or removed paths
+- If the old way was wrong, delete it — don't preserve it behind a flag
+
+**If it doesn't feel clean and inevitable, the design isn't done yet.**
+
 ### Respect Project Convention Files
 
 Many projects contain agent instruction files from other tools. Be mindful of these when working in any project:
