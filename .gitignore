@@ -5,7 +5,7 @@ auth.json
 .pi/
 sessions/
 bin/
-settings.json
+
 
 # Pi runtime files (created when this repo is ~/.pi/agent/)
 git/
