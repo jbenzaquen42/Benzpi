@@ -137,8 +137,10 @@ export default function (pi: ExtensionAPI) {
       setStatus("pi_cost", formatCost(sessionCost), "dollarsign.circle", GREEN);
     }
 
-    // Notify user that agent needs attention
-    run("notify", "--title", "Pi", "--body", "Agent is idle");
+    // Notify user that agent needs attention — use empty body so it
+    // triggers the blue ring and tab highlight without leaving persistent
+    // text in the sidebar.
+    run("notify", "--title", "Needs attention");
   });
 
   // --- Turn tracking (tokens + cost) ---
