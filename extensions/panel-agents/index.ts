@@ -67,6 +67,26 @@ function loadAgentDefaults(agentName: string): AgentDefaults | null {
   return null;
 }
 
+/**
+ * Resolve a skill name or path to a full filesystem path.
+ * Checks: as-is (absolute/relative), project .pi/skills/<name>/SKILL.md,
+ * then user ~/.pi/agent/skills/<name>/SKILL.md.
+ */
+function resolveSkillPath(nameOrPath: string): string {
+  // Already an absolute path or file path
+  if (nameOrPath.includes("/") || nameOrPath.includes("\\") || nameOrPath.endsWith(".md")) {
+    return nameOrPath;
+  }
+  // Check project-local
+  const projectPath = join(process.cwd(), ".pi", "skills", nameOrPath, "SKILL.md");
+  if (existsSync(projectPath)) return projectPath;
+  // Check user-global
+  const userPath = join(homedir(), ".pi", "agent", "skills", nameOrPath, "SKILL.md");
+  if (existsSync(userPath)) return userPath;
+  // Fallback: return as-is (pi will error if not found)
+  return nameOrPath;
+}
+
 function formatElapsed(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
   const m = Math.floor(seconds / 60);
@@ -168,7 +188,9 @@ export default function panelAgentsExtension(pi: ExtensionAPI) {
 
         if (effectiveSkills) {
           for (const skill of effectiveSkills.split(",").map((s) => s.trim()).filter(Boolean)) {
-            parts.push("--skill", shellEscape(skill));
+            // Resolve skill names to full paths — pi --skill expects paths, not names
+            const resolved = resolveSkillPath(skill);
+            parts.push("--skill", shellEscape(resolved));
           }
         } else {
           parts.push("--no-skills");
