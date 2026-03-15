@@ -195,9 +195,12 @@ export default function panelAgentsExtension(pi: ExtensionAPI) {
           }
         }
 
-        // Skills are loaded via /skill:name in the user message (inline expansion),
-        // not via --skill flag. Disable auto-discovery to keep the sub-agent lean.
-        parts.push("--no-skills");
+        // Skills are loaded via /skill:name in the user message (inline expansion).
+        // We need skill discovery enabled for /skill:name to resolve, so only
+        // pass --no-skills when there are no skills to load.
+        if (!effectiveSkills) {
+          parts.push("--no-skills");
+        }
 
         if (effectiveModel) {
           const model = effectiveThinking
