@@ -28,6 +28,7 @@ const PanelAgentParams = Type.Object({
   model: Type.Optional(Type.String({ description: "Model override" })),
   skills: Type.Optional(Type.String({ description: "Comma-separated skills to load" })),
   tools: Type.Optional(Type.String({ description: "Comma-separated tools to enable" })),
+  extensions: Type.Optional(Type.String({ description: "Comma-separated extension paths to load (e.g. ~/.pi/agent/extensions/session-artifacts.ts)" })),
 });
 
 function formatElapsed(seconds: number): string {
@@ -110,6 +111,13 @@ export default function panelAgentsExtension(pi: ExtensionAPI) {
         const parts: string[] = ["pi"];
         parts.push("--session-dir", shellEscape(dirname(sessionFile)));
         parts.push("--no-extensions");
+
+        // Load specific extensions (e.g. session-artifacts for write_artifact)
+        if (params.extensions) {
+          for (const ext of params.extensions.split(",").map((s) => s.trim()).filter(Boolean)) {
+            parts.push("-e", shellEscape(ext));
+          }
+        }
 
         if (params.skills) {
           for (const skill of params.skills.split(",").map((s) => s.trim()).filter(Boolean)) {

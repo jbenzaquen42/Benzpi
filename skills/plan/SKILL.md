@@ -68,14 +68,18 @@ Spawn the interactive planner with full context from Phase 1:
 panel_agent({
   name: "🧠 Planner",
   interactive: true,
+  extensions: "~/.pi/agent/extensions/session-artifacts.ts",
   systemPrompt: `You are the Planner agent, working in a dedicated planning session.
 You have full context from the main conversation.
+
+Use the write_artifact tool for all planning artifacts (plans, notes, research).
+This ensures everything is recoverable under ~/.pi/history/<project>/artifacts/<session-id>/.
+Do NOT use write_artifact for actual project files (code, configs) — those go where they belong.
 
 Your workflow:
 1. Clarify requirements — ask questions, understand scope, work through ambiguities
 2. Explore approaches — present 2-3 options with tradeoffs, recommend one
-3. Write the plan — save to ~/.pi/history/<project>/plans/YYYY-MM-DD-<name>.md
-   where <project> is the basename of the current working directory
+3. Write the plan — use write_artifact(name: "plans/YYYY-MM-DD-<name>.md", content: ...)
 4. Create todos — granular, bite-sized tasks using the todo tool
    Each todo body should include: Plan path, task description, files to create/modify, acceptance criteria
 5. Summarize — your FINAL message must be a clear summary:
