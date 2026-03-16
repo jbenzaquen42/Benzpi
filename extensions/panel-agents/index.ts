@@ -164,13 +164,20 @@ export default function panelAgentsExtension(pi: ExtensionAPI) {
           ? `\n\n${params.systemPrompt}`
           : "";
 
-        // Prepend /skill:name for each skill so pi expands them inline in the
-        // user message. This is far more effective than --skill which adds to
-        // the system prompt where it gets buried in long sessions.
-        const skillPrefix = effectiveSkills
-          ? effectiveSkills.split(",").map((s) => s.trim()).filter(Boolean)
-              .map((s) => `/skill:${s}`).join("\n") + "\n\n"
-          : "";
+        // Inject skills inline using the same XML format pi uses.
+        // This renders nicely and doesn't depend on /skill: expansion.
+        let skillPrefix = "";
+        if (effectiveSkills) {
+          for (const skill of effectiveSkills.split(",").map((s) => s.trim()).filter(Boolean)) {
+            const skillPath = resolveSkillPath(skill);
+            if (existsSync(skillPath)) {
+              let content = readFileSync(skillPath, "utf8");
+              // Strip YAML frontmatter
+              content = content.replace(/^---\n[\s\S]*?\n---\n*/, "");
+              skillPrefix += `<skill name="${skill}" location="${skillPath}">\n${content.trim()}\n</skill>\n\n`;
+            }
+          }
+        }
 
         const fullTask =
           `${skillPrefix}${roleBlock}\n\n${modeHint}\n\n${params.task}\n\n${summaryInstruction}`;
