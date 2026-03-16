@@ -284,7 +284,7 @@ export default function panelAgentsExtension(pi: ExtensionAPI) {
         surface = null;
 
         const sessionRef = subSessionFile
-          ? `\n\nSession: ${subSessionFile.path}`
+          ? `\n\nSession: ${subSessionFile.path}\nResume: pi --session ${subSessionFile.path}`
           : "";
         const resultText =
           exitCode !== 0
@@ -390,14 +390,15 @@ export default function panelAgentsExtension(pi: ExtensionAPI) {
 
       // Strip session path from summary for the preview (it's shown separately)
       const sessionPath: string | undefined = details?.sessionFile;
-      const cleanSummary = summaryText.replace(/\n\nSession: .+$/, "");
+      const cleanSummary = summaryText.replace(/\n\nSession: .+\nResume: .+$/, "").replace(/\n\nSession: .+$/, "");
       const preview =
         expanded || cleanSummary.length <= 120
           ? cleanSummary
           : cleanSummary.slice(0, 120) + "…";
 
       const sessionLine = sessionPath
-        ? "\n" + theme.fg("dim", `Session: ${sessionPath}`)
+        ? "\n" + theme.fg("dim", `Session: ${sessionPath}`) +
+          "\n" + theme.fg("dim", `Resume:  pi --session ${sessionPath}`)
         : "";
 
       const text =
