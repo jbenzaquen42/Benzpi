@@ -420,6 +420,82 @@ export default function subagentsExtension(pi: ExtensionAPI) {
     },
   });
 
+  // subagents_list tool — discover available agent definitions
+  pi.registerTool({
+    name: "subagents_list",
+    label: "List Subagents",
+    description:
+      "List all available subagent definitions. " +
+      "Scans project-local .pi/agents/ and global ~/.pi/agent/agents/. " +
+      "Project-local agents override global ones with the same name.",
+    parameters: Type.Object({}),
+
+    async execute() {
+      const agents = new Map<string, { name: string; description?: string; model?: string; source: string }>();
+
+      const dirs = [
+        { path: join(homedir(), ".pi", "agent", "agents"), source: "global" },
+        { path: join(process.cwd(), ".pi", "agents"), source: "project" },
+      ];
+
+      for (const { path: dir, source } of dirs) {
+        if (!existsSync(dir)) continue;
+        for (const file of readdirSync(dir).filter((f) => f.endsWith(".md"))) {
+          const content = readFileSync(join(dir, file), "utf8");
+          const match = content.match(/^---\n([\s\S]*?)\n---/);
+          if (!match) continue;
+          const frontmatter = match[1];
+          const get = (key: string) => {
+            const m = frontmatter.match(new RegExp(`^${key}:\\s*(.+)$`, "m"));
+            return m ? m[1].trim() : undefined;
+          };
+          const name = get("name") ?? file.replace(/\.md$/, "");
+          agents.set(name, {
+            name,
+            description: get("description"),
+            model: get("model"),
+            source,
+          });
+        }
+      }
+
+      if (agents.size === 0) {
+        return {
+          content: [{ type: "text", text: "No subagent definitions found." }],
+          details: { agents: [] },
+        };
+      }
+
+      const list = [...agents.values()];
+      const lines = list.map((a) => {
+        const badge = a.source === "project" ? " (project)" : "";
+        const desc = a.description ? ` — ${a.description}` : "";
+        const model = a.model ? ` [${a.model}]` : "";
+        return `• ${a.name}${badge}${model}${desc}`;
+      });
+
+      return {
+        content: [{ type: "text", text: lines.join("\n") }],
+        details: { agents: list },
+      };
+    },
+
+    renderResult(result, _opts, theme) {
+      const details = result.details as any;
+      const agents = details?.agents ?? [];
+      if (agents.length === 0) {
+        return new Text(theme.fg("dim", "No subagent definitions found."), 0, 0);
+      }
+      const lines = agents.map((a: any) => {
+        const badge = a.source === "project" ? theme.fg("accent", " (project)") : "";
+        const desc = a.description ? theme.fg("dim", ` — ${a.description}`) : "";
+        const model = a.model ? theme.fg("dim", ` [${a.model}]`) : "";
+        return `  ${theme.fg("toolTitle", theme.bold(a.name))}${badge}${model}${desc}`;
+      });
+      return new Text(lines.join("\n"), 0, 0);
+    },
+  });
+
   // /iterate command — fork the session into an interactive subagent
   pi.registerCommand("iterate", {
     description: "Fork session into an interactive subagent for focused work (bugfixes, iteration)",
