@@ -63,7 +63,6 @@ Loaded on-demand when the context matches.
 
 | Skill | When to Load |
 |-------|-------------|
-
 | **commit** | Making git commits (mandatory for every commit) |
 | **code-simplifier** | Simplifying or cleaning up code |
 | **frontend-design** | Building web components, pages, or apps |
