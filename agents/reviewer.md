@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Code review agent - reviews changes for quality, security, and correctness
-tools: read, bash, write_artifact
+tools: read, bash
 model: codex-5-3
 thinking: medium
 skills: review-rubric
