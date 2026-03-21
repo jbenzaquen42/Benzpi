@@ -2,8 +2,8 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
 export default function (pi: ExtensionAPI) {
-  // Queue of commands to execute after agent turn ends
-  let pendingCommand: { command: string; reason?: string } | null = null;
+  // Queue only commands that truly must wait for the turn to finish.
+  const pendingCommands: Array<{ command: string; reason?: string }> = [];
 
   // Tool to execute a command/message directly (self-invoke)
   pi.registerTool({
@@ -33,20 +33,30 @@ The command/message appears in the conversation as a user message.`,
 
     async execute(toolCallId, params, signal, onUpdate, ctx) {
       const { command, reason } = params;
-
-      // Store command to be executed after agent turn ends
-      pendingCommand = { command, reason };
-
-      const explanation = reason 
-        ? `Queued for execution: ${command}\nReason: ${reason}`
-        : `Queued for execution: ${command}`;
+      let explanation: string;
+      if (command === "/answer") {
+        pendingCommands.push({ command, reason });
+        explanation = reason
+          ? `Queued for execution: ${command}\nReason: ${reason}`
+          : `Queued for execution: ${command}`;
+      } else if (command.startsWith("/")) {
+        pi.sendUserMessage(command, { deliverAs: "followUp" });
+        explanation = reason
+          ? `Scheduled follow-up command: ${command}\nReason: ${reason}`
+          : `Scheduled follow-up command: ${command}`;
+      } else {
+        pi.sendUserMessage(command, { deliverAs: "followUp" });
+        explanation = reason
+          ? `Scheduled follow-up message: ${command}\nReason: ${reason}`
+          : `Scheduled follow-up message: ${command}`;
+      }
 
       return {
         content: [{ type: "text", text: explanation }],
         details: { 
           command,
           reason,
-          queued: true,
+          queued: command === "/answer",
         },
       };
     },
@@ -54,28 +64,15 @@ The command/message appears in the conversation as a user message.`,
 
   // Execute pending command after agent turn completes
   pi.on("agent_end", async (event, ctx) => {
-    if (pendingCommand) {
-      const { command } = pendingCommand;
-      pendingCommand = null;
-      
+    if (!pendingCommands.length) {
+      return;
+    }
+
+    const queued = pendingCommands.splice(0, pendingCommands.length);
+    for (const { command } of queued) {
       // Special handling for /answer via event bus (needs context)
       if (command === "/answer") {
-        setTimeout(() => {
-          pi.events.emit("trigger:answer", ctx);
-        }, 100);
-      } 
-      // Auto-execute slash commands via sendUserMessage
-      else if (command.startsWith("/")) {
-        setTimeout(() => {
-          pi.sendUserMessage(command);
-        }, 100);
-      }
-      // For non-command text, prefill editor and notify
-      else {
-        if (ctx.hasUI) {
-          ctx.ui.setEditorText(command);
-          ctx.ui.notify(`Press Enter to send: ${command}`, "info");
-        }
+        pi.events.emit("trigger:answer", ctx);
       }
     }
   });
