@@ -47,18 +47,47 @@ function Backup-PiConfig {
 
   $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
   $destinationDir = Join-Path $DestinationRoot "agent-$timestamp"
-  $excludeNames = @(".git", "bin", "sessions", ".pi")
+  $excludeNames = @(
+    ".git",
+    ".pi",
+    "bin",
+    "git",
+    "sessions",
+    "mcp-cache.json",
+    "mcp-npx-cache.json",
+    "run-history.jsonl",
+    "session-manager-config.toml"
+  )
 
   New-Item -ItemType Directory -Force -Path $destinationDir | Out-Null
 
-  Get-ChildItem -LiteralPath $SourceDir -Force | ForEach-Object {
-    if ($excludeNames -contains $_.Name) {
-      return
-    }
-
-    $targetPath = Join-Path $destinationDir $_.Name
-    Copy-Item -LiteralPath $_.FullName -Destination $targetPath -Recurse -Force
+  $itemsToCopy = Get-ChildItem -LiteralPath $SourceDir -Force | Where-Object {
+    $excludeNames -notcontains $_.Name
   }
+  $skippedItems = Get-ChildItem -LiteralPath $SourceDir -Force | Where-Object {
+    $excludeNames -contains $_.Name
+  } | Select-Object -ExpandProperty Name
+
+  Write-Host "Creating backup at $destinationDir"
+  if ($skippedItems) {
+    Write-Host "Skipping runtime/local items: $($skippedItems -join ', ')" -ForegroundColor DarkYellow
+  }
+
+  $totalItems = $itemsToCopy.Count
+  $index = 0
+
+  foreach ($item in $itemsToCopy) {
+    $index++
+    $percent = if ($totalItems -gt 0) { [int](($index / $totalItems) * 100) } else { 100 }
+    $itemType = if ($item.PSIsContainer) { "directory" } else { "file" }
+    Write-Progress -Activity "Backing up Pi config" -Status "Copying $($item.Name) ($index of $totalItems)" -PercentComplete $percent
+    Write-Host ("[{0}/{1}] Copying {2}: {3}" -f $index, $totalItems, $itemType, $item.Name)
+
+    $targetPath = Join-Path $destinationDir $item.Name
+    Copy-Item -LiteralPath $item.FullName -Destination $targetPath -Recurse -Force
+  }
+
+  Write-Progress -Activity "Backing up Pi config" -Completed
 
   Write-Host "Backup created at $destinationDir" -ForegroundColor Green
 }

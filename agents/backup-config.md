@@ -22,9 +22,14 @@ You are responsible for backing up the user's Pi agent directory from `~/.pi/age
 3. Copy the current config into that directory.
 4. Skip transient directories that do not belong in a config backup:
    - `.git`
+   - `git`
    - `bin`
    - `sessions`
    - `.pi`
+   - `mcp-cache.json`
+   - `mcp-npx-cache.json`
+   - `run-history.jsonl`
+   - `session-manager-config.toml`
 5. Report the backup path and any files or directories that were skipped.
 
 ## Rules

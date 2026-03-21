@@ -33,21 +33,38 @@ backup_pi_config() {
   local timestamp destination
   timestamp="$(date +%Y%m%d-%H%M%S)"
   destination="$BACKUP_ROOT/agent-$timestamp"
+  local skipped=()
+  local items=()
+  local path name index total
 
   mkdir -p "$destination"
 
   shopt -s dotglob nullglob
   for path in "$EXPECTED_DIR"/*; do
-    local name
     name="$(basename "$path")"
     case "$name" in
-      .git|bin|sessions|.pi)
+      .git|.pi|bin|git|sessions|mcp-cache.json|mcp-npx-cache.json|run-history.jsonl|session-manager-config.toml)
+        skipped+=("$name")
         continue
         ;;
     esac
-    cp -R "$path" "$destination/"
+    items+=("$path")
   done
   shopt -u dotglob nullglob
+
+  echo "Creating backup at $destination"
+  if [ "${#skipped[@]}" -gt 0 ]; then
+    printf 'Skipping runtime/local items: %s\n' "$(IFS=', '; echo "${skipped[*]}")"
+  fi
+
+  total="${#items[@]}"
+  index=0
+  for path in "${items[@]}"; do
+    index=$((index + 1))
+    name="$(basename "$path")"
+    echo "[$index/$total] Copying $name"
+    cp -R "$path" "$destination/"
+  done
 
   echo "Backup created at $destination"
 }
