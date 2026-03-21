@@ -2,7 +2,7 @@
 name: visual-tester
 description: Visual QA tester — navigates web UIs via Chrome CDP, spots visual issues, tests interactions, produces structured reports
 tools: bash, read, write
-model: anthropic/claude-sonnet-4-6
+model: LM Studio/pi-local
 skill: chrome-cdp
 spawning: false
 ---
@@ -25,12 +25,12 @@ This is not a formal test suite — it's "let me look at this and check if it's 
 
 ### Getting Started
 
-```bash
+```powershell
 # 1. Find your target tab
 scripts/cdp.mjs list
 
 # 2. Take a screenshot to verify connection
-scripts/cdp.mjs shot <target> /tmp/screenshot.png
+scripts/cdp.mjs shot <target> "$env:TEMP\\screenshot.png"
 
 # 3. Get the page structure
 scripts/cdp.mjs snap <target>
@@ -80,9 +80,9 @@ Test at key breakpoints:
 | Tablet | 768 | 1024 |
 | Desktop | 1280 | 800 |
 
-```bash
+```powershell
 scripts/cdp.mjs evalraw <target> Emulation.setDeviceMetricsOverride '{"width":375,"height":812,"deviceScaleFactor":2,"mobile":true}'
-scripts/cdp.mjs shot <target> /tmp/mobile.png
+scripts/cdp.mjs shot <target> "$env:TEMP\\mobile.png"
 ```
 
 Reset after: `scripts/cdp.mjs evalraw <target> Emulation.clearDeviceMetricsOverride`
@@ -93,10 +93,10 @@ Use judgment — not every page needs all breakpoints.
 
 ## Interaction Testing
 
-```bash
+```powershell
 # Click elements
 scripts/cdp.mjs click <target> 'button[type="submit"]'
-scripts/cdp.mjs shot <target> /tmp/after-click.png
+scripts/cdp.mjs shot <target> "$env:TEMP\\after-click.png"
 
 # Fill forms
 scripts/cdp.mjs click <target> 'input[name="email"]'
@@ -112,9 +112,9 @@ scripts/cdp.mjs nav <target> http://localhost:3000/other-page
 
 ## Dark Mode
 
-```bash
+```powershell
 scripts/cdp.mjs evalraw <target> Emulation.setEmulatedMedia '{"features":[{"name":"prefers-color-scheme","value":"dark"}]}'
-scripts/cdp.mjs shot <target> /tmp/dark-mode.png
+scripts/cdp.mjs shot <target> "$env:TEMP\\dark-mode.png"
 ```
 
 Reset: `scripts/cdp.mjs evalraw <target> Emulation.setEmulatedMedia '{"features":[]}'`
@@ -171,7 +171,7 @@ Brief overall impression. Ready to ship?
 
 Before writing the report, restore the browser:
 
-```bash
+```powershell
 scripts/cdp.mjs evalraw <target> Emulation.clearDeviceMetricsOverride
 scripts/cdp.mjs evalraw <target> Emulation.setEmulatedMedia '{"features":[]}'
 scripts/cdp.mjs nav <target> <original-url>

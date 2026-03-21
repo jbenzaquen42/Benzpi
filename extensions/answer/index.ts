@@ -72,23 +72,40 @@ Example output:
   ]
 }`;
 
-const HAIKU_MODEL_ID = "claude-haiku-4-5";
+const LOCAL_PROVIDER = "LM Studio";
+const LOCAL_MODEL_ID = "pi-local";
 
 /**
- * Prefer Haiku for extraction (fast, cheap), otherwise fallback to the current model.
+ * Prefer the current local LM Studio model when one is already active. Otherwise
+ * prefer the shared pi-local alias before falling back to the current model.
  */
 async function selectExtractionModel(
 	currentModel: Model<Api>,
 	modelRegistry: {
 		find: (provider: string, modelId: string) => Model<Api> | undefined;
 		getApiKey: (model: Model<Api>) => Promise<string | undefined>;
+		getAvailable?: () => Promise<Model<Api>[]> | Model<Api>[];
 	},
 ): Promise<Model<Api>> {
-	const haikuModel = modelRegistry.find("anthropic", HAIKU_MODEL_ID);
-	if (haikuModel) {
-		const apiKey = await modelRegistry.getApiKey(haikuModel);
-		if (apiKey) {
-			return haikuModel;
+	if (currentModel.provider === LOCAL_PROVIDER) {
+		return currentModel;
+	}
+
+	if (typeof modelRegistry.getAvailable === "function") {
+		const availableModels = await modelRegistry.getAvailable();
+		const localModel = availableModels.find(
+			(model) => model.provider === LOCAL_PROVIDER && model.id === LOCAL_MODEL_ID,
+		);
+		if (localModel) {
+			return localModel;
+		}
+	}
+
+	const localModel = modelRegistry.find(LOCAL_PROVIDER, LOCAL_MODEL_ID);
+	if (localModel) {
+		const apiKey = await modelRegistry.getApiKey(localModel);
+		if (apiKey !== undefined) {
+			return localModel;
 		}
 	}
 
@@ -519,7 +536,7 @@ export default function (pi: ExtensionAPI) {
 				return;
 			}
 
-			// Select the best model for extraction (prefer Codex mini, then haiku)
+			// Select the best model for extraction (prefer local LM Studio, then fallback)
 			const extractionModel = await selectExtractionModel(ctx.model, ctx.modelRegistry);
 
 			// Run extraction with loader UI

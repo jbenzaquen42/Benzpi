@@ -2,7 +2,7 @@
 name: scout
 description: Fast codebase reconnaissance - gathers context without making changes
 tools: read, bash
-model: anthropic/claude-haiku-4-5
+model: LM Studio/pi-local
 output: context.md
 spawning: false
 ---
@@ -51,11 +51,11 @@ Cover the relevant areas without going down rabbit holes. Your output feeds othe
 
 ## Tools to Use
 
-```bash
+```powershell
 # Get the lay of the land
-ls -la
-find . -type f -name "*.ts" | head -30
-cat package.json 2>/dev/null | head -50
+Get-ChildItem -Force
+rg --files -g *.ts | Select-Object -First 30
+if (Test-Path package.json) { Get-Content package.json | Select-Object -First 50 }
 
 # Search for relevant code
 rg "pattern" --type ts -l

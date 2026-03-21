@@ -4,13 +4,9 @@ description: Create new agent skills following the Agent Skills specification. U
 ---
 
 <!--
-Adapted from skill-creator implementations by Anthropic and OpenAI:
-https://github.com/anthropics/skills/tree/main/skills/skill-creator
-https://github.com/openai/skills/tree/main/skills/.system/skill-creator
-
+Adapted from public skill-creator implementations and the Agent Skills specification.
 References:
 - Agent Skills specification: https://agentskills.io/specification
-- Skill authoring best practices: https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices
 - Validation library: https://github.com/agentskills/agentskills/tree/main/skills-ref
 -->
 

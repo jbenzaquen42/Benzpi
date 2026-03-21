@@ -1,8 +1,8 @@
 ---
-name: reviewer
+name: reviewer-codex
 description: Code review agent - reviews changes for quality, security, and correctness
 tools: read, bash
-model: LM Studio/pi-local
+model: openai-codex/gpt-5.4
 thinking: medium
 spawning: false
 ---

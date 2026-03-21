@@ -10,19 +10,19 @@
 
 ## File Location and Naming
 
-Sessions are stored in `~/.pi/agent/sessions/` organized by project:
+Sessions are stored in `"$HOME\.pi\agent\sessions\"` organized by project:
 
 ```
-~/.pi/agent/sessions/
-├── --Users-haza-Projects-sentry--/
-│   ├── 2026-02-20T20-17-15-095Z_1a6f6bc4-....jsonl
-│   ├── subagent-artifacts/
-│   │   ├── 5f316403_worker_input.md
-│   │   ├── 5f316403_worker_output.md
-│   │   └── 5f316403_worker.jsonl
+"$HOME\.pi\agent\sessions\"
+\-- --Users-jacob-AI-pi-Benzpi--\
+    +-- 2026-02-20T20-17-15-095Z_1a6f6bc4-....jsonl
+    +-- subagent-artifacts\
+        +-- 5f316403_worker_input.md
+        +-- 5f316403_worker_output.md
+        \-- 5f316403_worker.jsonl
 ```
 
-- Directory names encode the project path with `--` delimiters and `-` replacing `/`
+- Directory names encode the project path with `--` delimiters and `-` replacing path separators
 - Filenames: `<ISO-timestamp>_<UUID>.jsonl`
 - Each line is a standalone JSON object
 
@@ -69,9 +69,9 @@ Every line has a `type` field:
 {
   "role": "assistant",
   "content": [...],
-  "api": "anthropic-messages",
-  "provider": "anthropic",
-  "model": "claude-opus-4-6",
+  "api": "openai-completions",
+  "provider": "LM Studio",
+  "model": "pi-local",
   "usage": {
     "input": 3, "output": 209,
     "cacheRead": 0, "cacheWrite": 11576, "totalTokens": 11788,
@@ -115,7 +115,7 @@ When the main agent delegates to subagents (worker, reviewer, scout), the subage
   "role": "toolResult",
   "toolCallId": "toolu_xxx",
   "toolName": "subagent",
-  "content": [{"type": "text", "text": "Done. Added the Workflow link..."}],
+  "content": [{"type": "text", "text": "Done. Added the workflow link..."}],
   "details": {
     "mode": "single",
     "results": [...],
@@ -142,10 +142,10 @@ Each result object contains:
 | `task` | string | The task prompt given to the agent |
 | `exitCode` | number | 0 = success, non-zero = failure |
 | `messages` | array | Full conversation (same format as session messages, inline) |
-| `model` | string | Model used (e.g., "claude-sonnet-4-6:minimal") |
+| `model` | string | Model used (e.g., `pi-local`) |
 | `usage` | object | `{input, output, cacheRead, cacheWrite, cost, turns}` |
 | `progressSummary` | object | `{toolCount, tokens, durationMs}` |
-| `skills` | array | Skill names loaded (e.g., ["commit"]) |
+| `skills` | array | Skill names loaded (e.g., `["commit"]`) |
 | `sessionFile` | string | Path to full JSONL in temp dir |
 | `artifactPaths` | object | Paths to input/output/jsonl/metadata files |
 | `progress` | object | Status tracking with task details |
@@ -154,13 +154,13 @@ Each result object contains:
 
 ```json
 {
-  "dir": "~/.pi/agent/sessions/<project>/subagent-artifacts",
+  "dir": "$HOME\\.pi\\agent\\sessions\\<project>\\subagent-artifacts",
   "files": [
     {
-      "inputPath": ".../<hash>_worker_input.md",
-      "outputPath": ".../<hash>_worker_output.md",
-      "jsonlPath": ".../<hash>_worker.jsonl",
-      "metadataPath": ".../<hash>_worker_metadata.json"
+      "inputPath": "...\\<hash>_worker_input.md",
+      "outputPath": "...\\<hash>_worker_output.md",
+      "jsonlPath": "...\\<hash>_worker.jsonl",
+      "metadataPath": "...\\<hash>_worker_metadata.json"
     }
   ]
 }
@@ -170,18 +170,18 @@ Each result object contains:
 
 Three ways to access subagent session data:
 
-1. **Inline messages** — `details.results[].messages` (embedded in parent, always available)
-2. **Temp session file** — `details.results[].sessionFile` at `$TMPDIR/pi-subagent-session-<random>/run-<N>/` (may be cleaned up)
-3. **Persistent artifacts** — `details.artifacts.files[]` in `~/.pi/agent/sessions/<project>/subagent-artifacts/` (persistent)
+1. **Inline messages** - `details.results[].messages` (embedded in parent, always available)
+2. **Temp session file** - `details.results[].sessionFile` at `$env:TEMP\pi-subagent-session-<random>\run-<N>\` (may be cleaned up)
+3. **Persistent artifacts** - `details.artifacts.files[]` in `"$HOME\.pi\agent\sessions\<project>\subagent-artifacts\"` (persistent)
 
 To read a subagent's full session, use its `sessionFile` or `artifactPaths.jsonlPath` with the same `read_session.py` script.
 
 ## Common Pitfalls
 
-1. **Nested message:** Content is at `line.message.content`, NOT `line.content`
+1. **Nested message:** Content is at `line.message.content`, not `line.content`
 2. **Content is an array:** Even single messages use `[{type: "text", text: "..."}]`
 3. **Tool results are separate entries:** Not inside the assistant message
 4. **Large sessions:** Tool results often contain huge outputs
 5. **String content:** Some older content fields may be plain strings
-6. **Subagent details:** The `details` field on subagent toolResults is NOT in the `content` array — it's a sibling of `content` on the message object
-7. **Subagent temp files:** `sessionFile` paths are in `$TMPDIR` and may be cleaned up; use `artifactPaths.jsonlPath` for persistent copies
+6. **Subagent details:** The `details` field on subagent toolResults is not in the `content` array; it is a sibling of `content` on the message object
+7. **Subagent temp files:** `sessionFile` paths are in `$env:TEMP` and may be cleaned up; use `artifactPaths.jsonlPath` for persistent copies

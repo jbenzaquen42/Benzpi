@@ -81,7 +81,7 @@ This applies to all modifications — don't guess at file contents.
 
 When you're about to ask the user whether they have a tool, command, or dependency installed — **don't ask, just try it**.
 
-```bash
+```powershell
 # Instead of asking "Do you have ffmpeg installed?"
 ffmpeg -version
 ```
@@ -181,11 +181,14 @@ You can execute slash commands yourself using the `execute_command` tool:
 
 | Agent | Purpose | Model |
 |-------|---------|-------|
-| `scout` | Fast codebase reconnaissance | Haiku (fast, cheap) |
-| `worker` | Implements tasks from todos, makes polished commits (always using the `commit` skill), and closes the todo | Sonnet 4.6 |
-| `reviewer` | Reviews code for quality/security | Codex 5.3 |
-| `researcher` | Deep research using parallel.ai tools (web search, extraction, synthesis) + Claude Code for code analysis | Sonnet 4.6 |
-| `planner` | Interactive brainstorming and planning — clarifies requirements, explores approaches, writes plans, creates todos | Opus 4.6 (medium thinking) |
+| `scout` | Fast codebase reconnaissance | LM Studio `pi-local` |
+| `worker` | Implements tasks from todos, makes polished commits (always using the `commit` skill), and closes the todo | LM Studio `pi-local` |
+| `reviewer` | Reviews code for quality/security | LM Studio `pi-local` |
+| `researcher` | Deep research using installed web tools plus local code analysis | LM Studio `pi-local` |
+| `planner` | Interactive brainstorming and planning - clarifies requirements, explores approaches, writes plans, creates todos | LM Studio `pi-local` |
+| `planner-codex` | Optional cloud planning offload | `openai-codex/gpt-5.4` |
+| `reviewer-codex` | Optional cloud review offload | `openai-codex/gpt-5.4` |
+| `researcher-codex` | Optional cloud research offload | `openai-codex/gpt-5.4` |
 
 #### Orchestration Mindset
 
@@ -202,7 +205,7 @@ This isn't a rigid hierarchy — it's a team of specialists. Each agent leans ha
 
 Subagents spawn visible pi sessions in cmux terminals. The user can watch progress in real-time and optionally interact. Autonomous agents call `subagent_done` to self-terminate.
 
-The `agent` parameter loads defaults from `~/.pi/agent/agents/<name>.md`. Model, tools, skills, thinking — all inherited. Explicit params override agent defaults.
+The `agent` parameter loads defaults from `"$HOME\.pi\agent\agents\<name>.md"`. Model, tools, skills, thinking - all inherited. Explicit params override agent defaults.
 
 ```typescript
 // Use existing agent definitions — full transparency
@@ -211,7 +214,7 @@ subagent({ name: "Worker", agent: "worker", interactive: false, task: "Implement
 subagent({ name: "Reviewer", agent: "reviewer", interactive: false, task: "Review recent changes..." })
 subagent({ name: "Researcher", agent: "researcher", interactive: false, task: "Research [topic]..." })
 
-// Planner — interactive, loads config from ~/.pi/agent/agents/planner.md
+// Planner - interactive, loads config from $HOME\.pi\agent\agents\planner.md
 subagent({
   name: "Planner",
   agent: "planner",
@@ -219,13 +222,13 @@ subagent({
   task: "Plan: [description]. Context: [relevant info]"
 })
 
-// Iterate — fork the session for focused work, full context preserved
+// Iterate - fork the session for focused work, full context preserved
 subagent({ name: "Iterate", interactive: true, fork: true, task: "Fix the bug where..." })
 
 // Override agent defaults when needed
-subagent({ name: "Worker", agent: "worker", model: "anthropic/claude-haiku-4-5", task: "Quick fix..." })
+subagent({ name: "Worker", agent: "worker", model: "LM Studio/pi-local", task: "Quick fix..." })
 
-// Parallel subagents — run multiple agents concurrently with tiled layout
+// Parallel subagents - run multiple agents concurrently with tiled layout
 parallel_subagents({
   agents: [
     { name: "Scout: Auth", agent: "scout", task: "Analyze auth module" },
@@ -236,7 +239,7 @@ parallel_subagents({
 
 **Parallel execution:** Use `parallel_subagents` to run multiple autonomous agents concurrently. Each gets its own cmux terminal in a tiled layout (first splits right, subsequent stack vertically). Progress updates stream in as each agent finishes — no waiting for all to complete.
 
-Subagents are full pi sessions — all extensions and skills auto-discover. A subagent can spawn another subagent (e.g., planner spawns a scout). Agent `.md` files in `~/.pi/agent/agents/` define model, tools, skills, thinking level.
+Subagents are full pi sessions — all extensions and skills auto-discover. A subagent can spawn another subagent (e.g., planner spawns a scout). Agent `.md` files in `"$HOME\.pi\agent\agents\"` define model, tools, skills, thinking level.
 
 **Slash commands:**
 - `/plan <what to build>` — start the full planning workflow (investigate → planner → execute → review)
@@ -258,10 +261,10 @@ subagent({
 
 #### When to Delegate
 
-- **Todos ready to execute** → Spawn `scout` then `worker` agents
-- **Code review needed** → Delegate to `reviewer`
-- **Need context first** → Start with `scout`
-- **Web research or external info needed** → Delegate to `researcher` (uses parallel.ai tools for web, Claude Code for code analysis)
+- **Todos ready to execute** -> Spawn `scout` then `worker` agents
+- **Code review needed** -> Delegate to `reviewer`
+- **Need context first** -> Start with `scout`
+- **Web research or external info needed** -> Delegate to `researcher` for installed web tools plus local code analysis
 
 #### When NOT to Delegate
 

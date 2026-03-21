@@ -1,119 +1,136 @@
 # Pi Config
 
-My personal [pi](https://github.com/badlogic/pi) configuration — agents, skills, extensions, and prompts that shape how pi works for me.
+Windows-first [pi](https://github.com/badlogic/pi) config for LM Studio, with optional native Codex login through Pi when you want ChatGPT Plus-backed online help.
 
 ## Setup
 
-Clone this repo directly to `~/.pi/agent/` — pi auto-discovers everything from there (extensions, skills, agents, AGENTS.md, mcp.json). No symlinks, no manual wiring.
+Clone this repo directly to `"$HOME\.pi\agent"` so Pi auto-discovers the config.
 
 ### Fresh machine
 
-```bash
-# 1. Install pi (https://github.com/badlogic/pi)
+```powershell
+# 1. Install pi and LM Studio
 
-# 2. Clone this repo as your agent config
-mkdir -p ~/.pi
-git clone git@github.com:HazAT/pi-config ~/.pi/agent
+# 2. Clone this repo as your Pi agent config
+git clone <your-fork-url> "$HOME\.pi\agent"
 
-# 3. Run setup (installs packages + extension deps)
-cd ~/.pi/agent && ./setup.sh
-
-# 4. Add your API keys to ~/.pi/agent/auth.json
-
-# 5. Restart pi
+# 3. Run setup
+Set-Location "$HOME\.pi\agent"
+.\setup.ps1
 ```
 
 ### Updating
 
-```bash
-cd ~/.pi/agent && git pull
+```powershell
+Set-Location "$HOME\.pi\agent"
+git pull
 ```
 
----
+## LM Studio
+
+This repo assumes exactly one local chat model is loaded at a time under the shared alias `pi-local`.
+
+```powershell
+lms ls
+lms server start
+lms load <your-chosen-local-model> --identifier pi-local -c 32768
+lms ps
+pi --list-models
+```
+
+Example loads:
+
+```powershell
+lms load huihui-qwen3-coder-30b-a3b-instruct-abliterated-i1 --identifier pi-local -c 32768
+lms load qwen3.5-9b-claude-code --identifier pi-local -c 32768
+```
+
+The repo does not require `pi-fast`, `pi-main`, or `pi-heavy`. If you want extra LM Studio aliases for your own experiments, you can create them, but the shipped config only depends on `LM Studio/pi-local`.
+
+## Codex OAuth
+
+This repo does not use `openai-oauth` and does not require an OpenAI API key for Codex access.
+
+Use Pi's native login flow instead:
+
+```text
+/login
+```
+
+Choose `ChatGPT Plus/Pro (Codex)`, then verify what Pi can see:
+
+```powershell
+pi --list-models codex
+```
+
+Local agents remain the default. Use the Codex-specific agents only when you explicitly want online help for planning, review, or research.
 
 ## Architecture
 
-This config uses **subagents** — visible pi sessions spawned in cmux terminals. Each subagent is a full pi session with its own identity, tools, and skills. The user can watch agents work in real-time and interact when needed.
+This config uses subagents, visible cmux terminals, local-first model defaults, and a small set of repo-local extensions.
 
 ### Key Concepts
 
-- **Subagents** — visible cmux terminals running pi. Autonomous agents self-terminate via `subagent_done`. Interactive agents wait for the user.
-- **Agent definitions** (`agents/*.md`) — one source of truth for model, tools, skills, and identity per role.
-- **Plan workflow** — `/plan` spawns an interactive planner subagent, then orchestrates workers and reviewers.
-- **Iterate pattern** — `/iterate` forks the session into a subagent for quick fixes without polluting the main context.
-
----
+- `agents/*.md` defines the role, default model, and workflow for each specialist.
+- `models.json` defines the single shipped LM Studio alias: `pi-local`.
+- `settings.json` keeps the default provider on `LM Studio` and the default model on `pi-local`.
+- `/login` is the optional online path for native Codex OAuth.
 
 ## Agents
 
-Specialized roles with baked-in identity, workflow, and review rubrics.
+| Agent | Default model | Purpose |
+|-------|---------------|---------|
+| **planner** | `LM Studio/pi-local` | Interactive brainstorming, planning, and todo creation |
+| **scout** | `LM Studio/pi-local` | Fast reconnaissance and codebase mapping |
+| **worker** | `LM Studio/pi-local` | Implements scoped tasks and verifies results |
+| **reviewer** | `LM Studio/pi-local` | Reviews code for correctness, risk, and quality |
+| **researcher** | `LM Studio/pi-local` | Uses installed research tools plus local code analysis |
+| **visual-tester** | `LM Studio/pi-local` | Visual QA through Chrome CDP |
+| **autoresearch** | `LM Studio/pi-local` | Autonomous experiment loop |
 
-| Agent | Model | Purpose |
-|-------|-------|---------|
-| **planner** | Opus 4.6 | Interactive brainstorming — clarify, explore, validate design, write plan, create todos |
-| **scout** | Haiku 4.5 | Fast codebase reconnaissance — gathers context without making changes |
-| **worker** | Sonnet 4.6 | Implements tasks from todos, commits with polished messages |
-| **reviewer** | Opus 4.6 | Reviews code for quality, security, correctness (review rubric baked in) |
-| **researcher** | Sonnet 4.6 | Deep research using parallel.ai tools + Claude Code for code analysis |
-| **visual-tester** | Sonnet 4.6 | Visual QA — navigates web UIs via Chrome CDP, spots issues, produces reports |
-| **autoresearch** | Opus 4.6 | Autonomous experiment loop — runs, measures, and optimizes iteratively |
+Codex offload agents:
 
-## Skills
-
-Loaded on-demand when the context matches.
-
-| Skill | When to Load |
-|-------|-------------|
-| **commit** | Making git commits (mandatory for every commit) |
-| **code-simplifier** | Simplifying or cleaning up code |
-| **frontend-design** | Building web components, pages, or apps |
-| **github** | Working with GitHub via `gh` CLI |
-| **iterate-pr** | Iterating on a PR until CI passes |
-| **learn-codebase** | Onboarding to a new project, checking conventions |
-| **session-reader** | Reading and analyzing pi session JSONL files |
-| **skill-creator** | Scaffolding new agent skills |
-| **cmux** | Managing terminal sessions via cmux |
-| **presentation-creator** | Creating data-driven presentation slides |
-| **add-mcp-server** | Adding MCP server configurations |
+| Agent | Default model | Purpose |
+|-------|---------------|---------|
+| **planner-codex** | `openai-codex/gpt-5.4` | Cloud planning when you want to spend Codex quota |
+| **reviewer-codex** | `openai-codex/gpt-5.4` | Cloud review for deeper second-pass analysis |
+| **researcher-codex** | `openai-codex/gpt-5.4` | Cloud research and synthesis when local context is not enough |
 
 ## Extensions
 
 | Extension | What it provides |
 |-----------|------------------|
-| **answer/** | `/answer` command + `Ctrl+.` — extracts questions into interactive Q&A UI |
-| **claude-tool/** | `claude` tool — invoke Claude Code for autonomous tasks |
-| **cmux/** | cmux integration — notifications, sidebar, workspace tools |
-| **cost/** | `/cost` command — API cost summary |
-| **execute-command/** | `execute_command` tool — lets the agent self-invoke slash commands |
-| **todos/** | `/todos` command + `todo` tool — file-based todo management |
-| **watchdog/** | Monitors agent behavior |
+| **answer/** | `/answer` command plus `Ctrl+.` for interactive Q&A |
+| **cmux/** | cmux integration, notifications, and sidebar status |
+| **cost/** | `/cost` command for session cost summaries |
+| **execute-command/** | lets the agent self-invoke slash commands |
+| **todos/** | `/todos` command plus `todo` tool |
+| **watchdog/** | monitors agent behavior |
 
-## Commands
+The helper extensions are local-first too:
 
-| Command | Description |
-|---------|-------------|
-| `/plan <description>` | Start a planning session — spawns planner subagent, then orchestrates execution |
-| `/subagent <agent> <task>` | Spawn a subagent (e.g., `/subagent scout analyze the auth module`) |
-| `/iterate [task]` | Fork session into interactive subagent for quick fixes |
-| `/answer` | Extract questions into interactive Q&A |
-| `/todos` | Visual todo manager |
-| `/cost` | API cost summary |
+- `answer` prefers the active LM Studio session model, then `LM Studio/pi-local`, then falls back to the current model.
+- `watchdog` tries `LM Studio/pi-local` first, then the current session model.
 
 ## Packages
 
-Installed via `pi install`, managed in `settings.json`.
+Installed through `pi install`, managed in `settings.json`.
 
 | Package | Description |
 |---------|-------------|
-| [pi-interactive-subagents](https://github.com/HazAT/pi-interactive-subagents) | Subagent tools + `/plan`, `/subagent`, `/iterate` commands |
-| [pi-parallel](https://github.com/HazAT/pi-parallel) | Parallel web search, extract, research, and enrich tools |
+| [pi-interactive-subagents](https://github.com/HazAT/pi-interactive-subagents) | subagent tools plus `/plan`, `/subagent`, `/iterate` |
+| [pi-parallel](https://github.com/HazAT/pi-parallel) | optional web search and research tools |
 | [pi-smart-sessions](https://github.com/HazAT/pi-smart-sessions) | AI-generated session names |
-| [pi-autoresearch](https://github.com/HazAT/pi-autoresearch) | Autonomous experiment loop with dashboard |
+| [pi-autoresearch](https://github.com/HazAT/pi-autoresearch) | autonomous experiment loop |
 | [pi-mcp-adapter](https://github.com/nicobailon/pi-mcp-adapter) | MCP server integration |
-| [glimpse](https://github.com/HazAT/glimpse) | Native macOS UI — dialogs, forms, visualizations |
 | [chrome-cdp-skill](https://github.com/pasky/chrome-cdp-skill) | Chrome DevTools Protocol CLI for visual testing |
 
----
+## Notes
+
+- This repo is intentionally Windows-first and local-first.
+- The main path is one loaded LM Studio model under `pi-local`.
+- Codex is an explicit secondary path through `planner-codex`, `reviewer-codex`, and `researcher-codex`.
+- API-key-based OpenAI usage is still possible in Pi generally, but it is not the primary path for this config.
 
 ## Credits
 

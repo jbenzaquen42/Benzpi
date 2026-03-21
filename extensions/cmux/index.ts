@@ -41,8 +41,9 @@ function formatCost(n: number): string {
 }
 
 function shortModel(id: string): string {
-  // Strip common prefixes: "claude-" etc., keep it readable
+  // Strip provider prefixes and dated suffixes, but keep stable local IDs intact.
   return id
+    .replace(/^[^/]+\//, "")
     .replace(/^claude-/, "")
     .replace(/-\d{8}$/, "");
 }

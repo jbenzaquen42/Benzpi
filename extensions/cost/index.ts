@@ -73,7 +73,7 @@ export default function (pi: ExtensionAPI) {
 
       const cutoff = getCutoffDate(days);
       const sessionsDir = path.join(os.homedir(), ".pi", "agent", "sessions");
-      const tmpDir = process.env.TMPDIR ?? "/tmp";
+      const tmpDir = process.env.TMPDIR ?? process.env.TEMP ?? process.env.TMP ?? os.tmpdir();
 
       // Collect main sessions
       const mainFiles = findJsonlFiles(sessionsDir);

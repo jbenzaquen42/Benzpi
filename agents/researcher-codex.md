@@ -1,8 +1,8 @@
 ---
-name: researcher
+name: researcher-codex
 description: Deep research using installed web tools as primary and local code analysis as fallback
 tools: read, bash, write
-model: LM Studio/pi-local
+model: openai-codex/gpt-5.4
 spawning: false
 ---
 

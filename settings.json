@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.60.0",
-  "defaultProvider": "anthropic",
-  "defaultModel": "claude-opus-4-6",
+  "defaultProvider": "LM Studio",
+  "defaultModel": "pi-local",
   "defaultThinkingLevel": "medium",
   "packages": [
     "git:github.com/nicobailon/pi-mcp-adapter",
@@ -18,13 +18,11 @@
       ]
     },
     "git:github.com/pasky/chrome-cdp-skill",
-    "git:github.com/HazAT/glimpse",
     "git:github.com/HazAT/pi-interactive-subagents",
     "git:github.com/HazAT/pi-autoresearch"
   ],
   "hideThinkingBlock": false,
   "extensions": [
-    "+extensions/cmux/index.ts",
-    "+extensions/claude-tool/index.ts"
+    "+extensions/cmux/index.ts"
   ]
 }

@@ -6,22 +6,26 @@ interface JudgeResult {
   compact: boolean;
 }
 
+interface JudgeModelCandidate {
+  provider: string;
+  model: string;
+}
+
 function formatSessionSummary(ctx: any): string {
   const entries: any[] = ctx.sessionManager.getBranch();
   const recent = entries.slice(-20);
 
   const lines: string[] = [];
   let totalChars = 0;
-  const CAP = 4000;
+  const cap = 4000;
 
-  // Context usage header
   const usage = ctx.getContextUsage?.();
   if (usage?.tokens != null) {
     lines.push(`[CONTEXT] ${usage.tokens} tokens used`);
   }
 
   for (const entry of recent) {
-    if (totalChars >= CAP) break;
+    if (totalChars >= cap) break;
     if (entry.type !== "message" || !entry.message) continue;
 
     const msg = entry.message;
@@ -37,13 +41,13 @@ function formatSessionSummary(ctx: any): string {
         typeof msg.content === "string"
           ? msg.content
           : Array.isArray(msg.content)
-            ? msg.content.map((b: any) => b.text ?? "").join(" ")
+            ? msg.content.map((block: any) => block.text ?? "").join(" ")
             : "";
       line = `${prefix}[USER] ${text.substring(0, 200)}`;
     } else if (msg.role === "assistant") {
       if (Array.isArray(msg.content)) {
         for (const block of msg.content) {
-          if (totalChars >= CAP) break;
+          if (totalChars >= cap) break;
           if (block.type === "text") {
             line = `${prefix}[ASSISTANT] ${block.text.substring(0, 200)}`;
           } else if (block.type === "toolCall") {
@@ -60,7 +64,7 @@ function formatSessionSummary(ctx: any): string {
       }
     } else if (msg.role === "toolResult") {
       const content = Array.isArray(msg.content)
-        ? msg.content.map((b: any) => b.text ?? "").join(" ")
+        ? msg.content.map((block: any) => block.text ?? "").join(" ")
         : String(msg.content ?? "");
       const status = msg.isError ? "error" : "success";
       line = `${prefix}[TOOL_RESULT] ${msg.toolName ?? ""}: ${status} - ${content.substring(0, 200)}`;
@@ -77,8 +81,27 @@ function formatSessionSummary(ctx: any): string {
   return lines.join("\n");
 }
 
+function getJudgeCandidates(ctx: any): JudgeModelCandidate[] {
+  const candidates: JudgeModelCandidate[] = [
+    { provider: "LM Studio", model: "pi-local" },
+  ];
+
+  if (ctx?.model?.provider && ctx?.model?.id) {
+    candidates.push({ provider: ctx.model.provider, model: ctx.model.id });
+  }
+
+  const seen = new Set<string>();
+  return candidates.filter((candidate) => {
+    const key = `${candidate.provider}/${candidate.model}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 async function callJudge(
   pi: ExtensionAPI,
+  ctx: any,
   summary: string,
   timeSinceActivityMs: number,
   consecutiveInterventions: number
@@ -90,7 +113,6 @@ async function callJudge(
   };
 
   const idleSecs = Math.round(timeSinceActivityMs / 1000);
-
   const judgePrompt = `You are monitoring an AI coding agent session. Analyze the recent activity and determine if the agent needs intervention.
 
 ## Recent Session Activity
@@ -102,9 +124,9 @@ ${summary}
 
 ## Analysis Instructions
 Determine one of:
-- **continue**: Agent is making progress (just slow) — no intervention needed
-- **nudge**: Agent appears stuck — suggest what it should try differently in your message
-- **abort**: Agent is looping (same errors/approaches repeated) — situation is unrecoverable without user input
+- continue: Agent is making progress and does not need intervention
+- nudge: Agent appears stuck and should try a different approach
+- abort: Agent is looping and needs user input before continuing
 
 Also consider:
 - If context token count is high (>150k), set compact: true to recommend compaction
@@ -114,57 +136,64 @@ Also consider:
 Respond ONLY with valid JSON, no other text, no markdown fences:
 { "action": "continue" | "nudge" | "abort", "message": "explanation", "compact": true | false }`;
 
-  try {
-    const result = await pi.exec(
-      "pi",
-      [
-        "-p",
-        "--no-session",
-        "--no-tools",
-        "--model",
-        "anthropic/claude-haiku-3-5",
-        judgePrompt,
-      ],
-      { timeout: 30000 }
-    );
+  for (const candidate of getJudgeCandidates(ctx)) {
+    try {
+      const result = await pi.exec(
+        "pi",
+        [
+          "-p",
+          "--no-session",
+          "--no-tools",
+          "--provider",
+          candidate.provider,
+          "--model",
+          candidate.model,
+          judgePrompt,
+        ],
+        { timeout: 30000 }
+      );
 
-    if (result.code !== 0 || !result.stdout) return defaultResult;
+      if (result.code !== 0 || !result.stdout) {
+        continue;
+      }
 
-    // Extract JSON — handle optional markdown code fences
-    const text = result.stdout.trim();
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return defaultResult;
+      const text = result.stdout.trim();
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        continue;
+      }
 
-    const parsed = JSON.parse(jsonMatch[0]);
-    if (
-      parsed.action === "continue" ||
-      parsed.action === "nudge" ||
-      parsed.action === "abort"
-    ) {
-      return {
-        action: parsed.action,
-        message: String(parsed.message ?? ""),
-        compact: Boolean(parsed.compact),
-      };
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (
+        parsed.action === "continue" ||
+        parsed.action === "nudge" ||
+        parsed.action === "abort"
+      ) {
+        return {
+          action: parsed.action,
+          message: String(parsed.message ?? ""),
+          compact: Boolean(parsed.compact),
+        };
+      }
+    } catch {
+      continue;
     }
-    return defaultResult;
-  } catch {
-    return defaultResult;
   }
+
+  return defaultResult;
 }
 
 export default function (pi: ExtensionAPI) {
-  // State
-  let lastActivityTimestamp: number = Date.now();
-  let consecutiveInterventions: number = 0;
-  let enabled: boolean = false;
-  let checkIntervalMs: number = 5 * 60 * 1000; // 5 minutes
-  let stuckThresholdMs: number = 5 * 60 * 1000; // same as check interval
-  const maxInterventions: number = 3;
+  let lastActivityTimestamp = Date.now();
+  let consecutiveInterventions = 0;
+  let enabled = false;
+  let checkIntervalMs = 5 * 60 * 1000;
+  let stuckThresholdMs = 5 * 60 * 1000;
+  const maxInterventions = 3;
 
   let checkInterval: ReturnType<typeof setInterval> | null = null;
   let sessionCtx: any = null;
-  let judgeInProgress: boolean = false;
+  let judgeInProgress = false;
 
   function updateActivity() {
     lastActivityTimestamp = Date.now();
@@ -178,9 +207,9 @@ export default function (pi: ExtensionAPI) {
   function updateStatusBar() {
     if (!sessionCtx) return;
     if (enabled) {
-      sessionCtx.ui.setStatus("watchdog", `🐵 ${getIntervalMinutes()}m`);
+      sessionCtx.ui.setStatus("watchdog", `watch ${getIntervalMinutes()}m`);
     } else {
-      sessionCtx.ui.setStatus("watchdog", "🙈");
+      sessionCtx.ui.setStatus("watchdog", "watch off");
     }
   }
 
@@ -188,25 +217,18 @@ export default function (pi: ExtensionAPI) {
     if (checkInterval) clearInterval(checkInterval);
     checkInterval = setInterval(async () => {
       if (!enabled || !ctx) return;
-
-      // CRITICAL: Idle agent is never stuck — skip entirely
       if (ctx.isIdle()) return;
 
       const timeSinceActivity = Date.now() - lastActivityTimestamp;
-
-      // Recent activity — no problem
       if (timeSinceActivity < stuckThresholdMs) return;
-
-      // Guard against re-entrant judge calls
       if (judgeInProgress) return;
 
       judgeInProgress = true;
       try {
-        // Consecutive limit check — give up before even calling judge
         if (consecutiveInterventions >= maxInterventions) {
           await ctx.abort();
           pi.sendUserMessage(
-            "[Watchdog] Giving up after " + maxInterventions + " intervention attempts. The current operation was cancelled. Please review and decide how to proceed.",
+            `[Watchdog] Giving up after ${maxInterventions} intervention attempts. The current operation was cancelled. Please review and decide how to proceed.`,
             { deliverAs: "followUp" }
           );
           enabled = false;
@@ -215,15 +237,20 @@ export default function (pi: ExtensionAPI) {
         }
 
         const summary = formatSessionSummary(ctx);
-        const judgment = await callJudge(pi, summary, timeSinceActivity, consecutiveInterventions);
+        const judgment = await callJudge(
+          pi,
+          ctx,
+          summary,
+          timeSinceActivity,
+          consecutiveInterventions
+        );
 
         if (judgment.action === "continue") {
-          // No intervention needed — reset timestamp so we don't immediately re-trigger
           lastActivityTimestamp = Date.now();
         } else if (judgment.action === "nudge") {
           await ctx.abort();
           pi.sendUserMessage(
-            "[Watchdog] " + judgment.message + " The blocked operation was cancelled. Try a different approach.",
+            `[Watchdog] ${judgment.message} The blocked operation was cancelled. Try a different approach.`,
             { deliverAs: "followUp" }
           );
           consecutiveInterventions++;
@@ -234,7 +261,7 @@ export default function (pi: ExtensionAPI) {
         } else if (judgment.action === "abort") {
           await ctx.abort();
           pi.sendUserMessage(
-            "[Watchdog] " + judgment.message + " Session stopped to avoid wasting resources.",
+            `[Watchdog] ${judgment.message} Session stopped to avoid wasting resources.`,
             { deliverAs: "followUp" }
           );
           enabled = false;
@@ -244,33 +271,30 @@ export default function (pi: ExtensionAPI) {
           }
         }
       } catch {
-        // Swallow errors from abort/sendUserMessage — the watchdog should never
-        // crash the session. If intervention fails, we'll try again next tick.
+        // Keep the watchdog from crashing the session if intervention fails.
       } finally {
         judgeInProgress = false;
       }
     }, checkIntervalMs);
   }
 
-  // Activity tracking events
-  pi.on("turn_end", async (_event, _ctx) => {
+  pi.on("turn_end", async () => {
     updateActivity();
   });
 
-  pi.on("tool_execution_end", async (_event, _ctx) => {
+  pi.on("tool_execution_end", async () => {
     updateActivity();
   });
 
-  pi.on("tool_execution_update", async (_event, _ctx) => {
+  pi.on("tool_execution_update", async () => {
     updateActivity();
   });
 
-  pi.on("message_end", async (_event, _ctx) => {
+  pi.on("message_end", async () => {
     updateActivity();
   });
 
-  pi.on("agent_end", async (_event, _ctx) => {
-    // Agent finished normally — reset activity so watchdog knows it's safe
+  pi.on("agent_end", async () => {
     updateActivity();
   });
 
@@ -300,7 +324,7 @@ export default function (pi: ExtensionAPI) {
       if (arg === "off") {
         enabled = false;
         updateStatusBar();
-        return "Watchdog disabled (🙈).";
+        return "Watchdog disabled.";
       }
 
       if (arg === "on") {
@@ -309,7 +333,7 @@ export default function (pi: ExtensionAPI) {
         lastActivityTimestamp = Date.now();
         updateStatusBar();
         startTimer(ctx);
-        return `Watchdog enabled (🐵 ${getIntervalMinutes()}m).`;
+        return `Watchdog enabled (${getIntervalMinutes()}m).`;
       }
 
       if (arg === "") {
@@ -321,8 +345,8 @@ export default function (pi: ExtensionAPI) {
         }
         updateStatusBar();
         return enabled
-          ? `Watchdog enabled (🐵 ${getIntervalMinutes()}m).`
-          : "Watchdog disabled (🙈).";
+          ? `Watchdog enabled (${getIntervalMinutes()}m).`
+          : "Watchdog disabled.";
       }
 
       const minutes = parseInt(arg, 10);
@@ -331,9 +355,8 @@ export default function (pi: ExtensionAPI) {
         stuckThresholdMs = checkIntervalMs;
         enabled = true;
         updateStatusBar();
-        // Restart timer with new interval
         startTimer(ctx);
-        return `Watchdog set to ${minutes}m interval (🐵 ${minutes}m).`;
+        return `Watchdog set to ${minutes}m interval.`;
       }
 
       return `Unknown argument: "${arg}". Usage: /watchdog [off|on|<minutes>]`;
