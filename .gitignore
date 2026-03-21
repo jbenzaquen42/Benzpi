@@ -5,6 +5,7 @@ auth.json
 .pi/
 sessions/
 bin/
+LOCAL_LLM_CONTEXT.md
 
 
 # Pi runtime files (created when this repo is ~/.pi/agent/)

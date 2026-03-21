@@ -183,6 +183,10 @@ You can execute slash commands yourself using the `execute_command` tool:
 |-------|---------|-------|
 | `scout` | Fast codebase reconnaissance | LM Studio `pi-local` |
 | `worker` | Implements tasks from todos, makes polished commits (always using the `commit` skill), and closes the todo | LM Studio `pi-local` |
+| `python-worker` | Implements Python scripts, packages, tooling, APIs, and tests with Python-aware verification | LM Studio `pi-local` |
+| `dotnet-worker` | Implements C# and .NET tasks with solution-aware build and test verification | LM Studio `pi-local` |
+| `docker-worker` | Implements Dockerfiles, Compose stacks, and local containerized dev-environment work | LM Studio `pi-local` |
+| `env-doctor` | Diagnoses broken local setup across Pi, LM Studio, MCP, Docker, and tooling | LM Studio `pi-local` |
 | `reviewer` | Reviews code for quality/security | LM Studio `pi-local` |
 | `researcher` | Deep research using installed web tools plus local code analysis | LM Studio `pi-local` |
 | `planner` | Interactive brainstorming and planning - clarifies requirements, explores approaches, writes plans, creates todos | LM Studio `pi-local` |
@@ -275,6 +279,92 @@ subagent({
 
 **Default to delegation for anything substantial.**
 
+#### Agent Selection Rules
+
+- Use `scout` first when the codebase is unfamiliar and you need a fast map before acting.
+- Use `planner` when the requirement, scope, or design is still fuzzy and you need decisions before implementation.
+- Use `python-worker` when the dominant task is Python and the right verification should come from Python tooling.
+- Use `dotnet-worker` when the dominant task is C# or .NET and the repo is best understood through `.sln` / `.csproj` structure.
+- Use `docker-worker` when the dominant task is Docker, Compose, ports, images, logs, or local service orchestration.
+- Use `worker` when the task is mixed-stack, generic, or not clearly owned by one specialist.
+- Use `reviewer` after substantial implementation work when you want a focused correctness and risk pass.
+- Use `researcher` when the task depends on outside documentation or ecosystem knowledge.
+- Use `env-doctor` when local tools or infrastructure are failing before normal implementation can begin.
+
+#### Agent Guide
+
+##### `worker`
+
+- **Purpose:** Default execution path for mixed-stack or general engineering work.
+- **Typical tasks:** Small to medium implementation tasks, follow-up fixes, scoped todo execution.
+- **Do not use for:** Clearly Python-specific, .NET-specific, Docker-specific, or environment-diagnosis-heavy tasks.
+- **Why it exists:** It is the lowest-friction default when no specialist clearly owns the work.
+- **Relationship to other agents:** `scout` feeds it context, `planner` feeds it decisions, `reviewer` checks its work, and specialist workers replace it when a domain clearly dominates.
+
+##### `python-worker`
+
+- **Purpose:** Execute Python-heavy work with Python-aware project discovery and verification.
+- **Typical tasks:** Python scripts, CLIs, automation, APIs, packages, and test fixes.
+- **Do not use for:** Mixed-stack work where Python is incidental, or Docker/service orchestration as the main problem.
+- **Why it exists:** Generic execution often makes weaker choices around Python environments, dependency tools, and verification commands.
+- **Relationship to other agents:** Works like `worker`, but should be preferred when Python is the main language. Still benefits from `scout`, `planner`, and `reviewer`.
+
+##### `dotnet-worker`
+
+- **Purpose:** Execute C# and .NET work using solution-aware discovery and `dotnet` verification.
+- **Typical tasks:** ASP.NET Core changes, library work, console apps, build/test failures, and solution-scoped refactors.
+- **Do not use for:** Unity-specific work, general environment diagnosis, or tasks where .NET is not the dominant concern.
+- **Why it exists:** .NET repos are structured around solutions, projects, and CLI workflows that deserve a specialist path.
+- **Relationship to other agents:** Follows the same orchestration role as `worker`, but specializes in `.sln` / `.csproj` driven repos and verification.
+
+##### `docker-worker`
+
+- **Purpose:** Execute Docker and Compose changes for local development environments.
+- **Typical tasks:** Dockerfiles, image builds, Compose wiring, ports, volumes, logs, and startup-order debugging.
+- **Do not use for:** App-code tasks where containers are only incidental, or Kubernetes-first platform work.
+- **Why it exists:** Container and service issues are operationally different from normal code changes and benefit from service-level reasoning.
+- **Relationship to other agents:** Can work alongside app-code workers, but owns the environment/container layer when that is the main problem.
+
+##### `env-doctor`
+
+- **Purpose:** Diagnose broken local setup and toolchain wiring.
+- **Typical tasks:** `pi-local` problems, LM Studio connectivity, MCP connection issues, Docker daemon issues, PATH/tool failures.
+- **Do not use for:** Normal feature implementation, planning, or code review.
+- **Why it exists:** Environment failures are a different class of problem from product code and should be isolated for faster recovery.
+- **Relationship to other agents:** Unblocks all other agents by restoring a healthy environment; once the environment is healthy, normal work should hand off to the right specialist.
+
+##### `scout`
+
+- **Purpose:** Fast reconnaissance and convention gathering.
+- **Typical tasks:** Mapping files, finding related code, identifying patterns and gotchas.
+- **Do not use for:** Implementation or speculative redesign.
+- **Why it exists:** Good implementation depends on accurate local context.
+- **Relationship to other agents:** Usually runs before `worker` or a specialist worker on unfamiliar codebases.
+
+##### `planner`
+
+- **Purpose:** Clarify intent, compare approaches, and write actionable plans and todos.
+- **Typical tasks:** Requirements clarification, design exploration, phased execution plans.
+- **Do not use for:** Direct implementation when the main gap is coding rather than decision-making.
+- **Why it exists:** Many failures come from building the wrong thing efficiently.
+- **Relationship to other agents:** Hands structured work to `worker` or specialist workers after design is stable.
+
+##### `reviewer`
+
+- **Purpose:** Review changes for correctness, risk, and quality.
+- **Typical tasks:** Post-implementation review, regression spotting, test-gap identification.
+- **Do not use for:** Writing the implementation itself.
+- **Why it exists:** A separate review pass catches mistakes the implementation agent may normalize.
+- **Relationship to other agents:** Usually follows `worker` or a specialist worker after implementation.
+
+##### `researcher`
+
+- **Purpose:** Gather external information and combine it with local analysis.
+- **Typical tasks:** Library documentation, package comparisons, ecosystem research, technical fact-finding.
+- **Do not use for:** Purely local implementation tasks that do not need outside information.
+- **Why it exists:** Web questions should be answered with actual research, not memory.
+- **Relationship to other agents:** Often informs `planner` or a worker before implementation decisions are finalized.
+
 ### Skill Triggers
 
 Skills provide specialized instructions for specific tasks. Load them when the context matches.
@@ -284,6 +374,8 @@ Skills provide specialized instructions for specific tasks. Load them when the c
 | Starting work in a new/unfamiliar project, or asked to learn conventions | `learn-codebase` |
 | Making git commits (always — every commit must be polished and descriptive) | `commit` |
 | Starting, stopping, or configuring Docker/OrbStack services | `dev-environment` |
+| Implementing or debugging Python scripts, packages, tests, or lightweight services | `python-project` |
+| Implementing or debugging C# and .NET projects | `dotnet-project` |
 | Building web components, pages, or frontend interfaces | `frontend-design` |
 | Working with GitHub | `github` |
 | Asked to simplify/clean up/refactor code | `code-simplifier` |
