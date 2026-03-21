@@ -187,6 +187,7 @@ You can execute slash commands yourself using the `execute_command` tool:
 | `dotnet-worker` | Implements C# and .NET tasks with solution-aware build and test verification | LM Studio `pi-local` |
 | `docker-worker` | Implements Dockerfiles, Compose stacks, and local containerized dev-environment work | LM Studio `pi-local` |
 | `env-doctor` | Diagnoses broken local setup across Pi, LM Studio, MCP, Docker, and tooling | LM Studio `pi-local` |
+| `backup-config` | Backs up the current Pi config to `~/.pi_backup` | LM Studio `pi-local` |
 | `reviewer` | Reviews code for quality/security | LM Studio `pi-local` |
 | `researcher` | Deep research using installed web tools plus local code analysis | LM Studio `pi-local` |
 | `planner` | Interactive brainstorming and planning - clarifies requirements, explores approaches, writes plans, creates todos | LM Studio `pi-local` |
@@ -269,6 +270,7 @@ subagent({
 - **Code review needed** -> Delegate to `reviewer`
 - **Need context first** -> Start with `scout`
 - **Web research or external info needed** -> Delegate to `researcher` for installed web tools plus local code analysis
+- **Need a restore point before setup or upgrades** -> Delegate to `backup-config`
 
 #### When NOT to Delegate
 

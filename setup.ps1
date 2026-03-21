@@ -2,6 +2,7 @@ $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $expectedDir = Join-Path $HOME ".pi\agent"
+$backupRoot = Join-Path $HOME ".pi_backup"
 
 function Resolve-CanonicalPath {
   param([string]$Path)
@@ -11,6 +12,55 @@ function Resolve-CanonicalPath {
   } catch {
     return $null
   }
+}
+
+function Prompt-YesNo {
+  param(
+    [string]$Message,
+    [bool]$Default = $true
+  )
+
+  $suffix = if ($Default) { "[Y/n]" } else { "[y/N]" }
+  $response = Read-Host "$Message $suffix"
+
+  if ([string]::IsNullOrWhiteSpace($response)) {
+    return $Default
+  }
+
+  switch ($response.Trim().ToLowerInvariant()) {
+    "y" { return $true }
+    "yes" { return $true }
+    "n" { return $false }
+    "no" { return $false }
+    default {
+      Write-Host "Please answer y or n." -ForegroundColor Yellow
+      return Prompt-YesNo -Message $Message -Default $Default
+    }
+  }
+}
+
+function Backup-PiConfig {
+  param(
+    [string]$SourceDir,
+    [string]$DestinationRoot
+  )
+
+  $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+  $destinationDir = Join-Path $DestinationRoot "agent-$timestamp"
+  $excludeNames = @(".git", "bin", "sessions", ".pi")
+
+  New-Item -ItemType Directory -Force -Path $destinationDir | Out-Null
+
+  Get-ChildItem -LiteralPath $SourceDir -Force | ForEach-Object {
+    if ($excludeNames -contains $_.Name) {
+      return
+    }
+
+    $targetPath = Join-Path $destinationDir $_.Name
+    Copy-Item -LiteralPath $_.FullName -Destination $targetPath -Recurse -Force
+  }
+
+  Write-Host "Backup created at $destinationDir" -ForegroundColor Green
 }
 
 $resolvedScriptDir = Resolve-CanonicalPath $scriptDir
@@ -26,6 +76,12 @@ if (-not $resolvedExpectedDir -or $resolvedScriptDir -ne $resolvedExpectedDir) {
 Write-Host "Setting up pi config at $expectedDir"
 Write-Host ""
 
+if (Prompt-YesNo "Create a backup of the current pi config in $backupRoot before installing?" $true) {
+  Backup-PiConfig -SourceDir $expectedDir -DestinationRoot $backupRoot
+} else {
+  Write-Host "Skipping backup."
+}
+
 $packages = @(
   "git:github.com/nicobailon/pi-mcp-adapter",
   "git:github.com/HazAT/pi-smart-sessions",
@@ -35,22 +91,31 @@ $packages = @(
   "git:github.com/HazAT/pi-autoresearch"
 )
 
-Write-Host "Installing packages..."
-foreach ($package in $packages) {
-  Write-Host "  $package"
-  & pi install $package | Out-Host
-  if ($LASTEXITCODE -ne 0) {
-    Write-Host "    skipped (already installed or install failed)" -ForegroundColor DarkYellow
+Write-Host ""
+if (Prompt-YesNo "Install configured pi packages now?" $true) {
+  Write-Host "Installing packages..."
+  foreach ($package in $packages) {
+    Write-Host "  $package"
+    & pi install $package | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host "    skipped (already installed or install failed)" -ForegroundColor DarkYellow
+    }
   }
+} else {
+  Write-Host "Skipping package installation."
 }
 
 Write-Host ""
-Write-Host "LM Studio checks:"
-& lms --help *> $null
-if ($LASTEXITCODE -eq 0) {
-  Write-Host "  LM Studio CLI detected."
+if (Prompt-YesNo "Run the LM Studio CLI check now?" $true) {
+  Write-Host "LM Studio checks:"
+  & lms --help *> $null
+  if ($LASTEXITCODE -eq 0) {
+    Write-Host "  LM Studio CLI detected."
+  } else {
+    Write-Host "  LM Studio CLI not detected. Install LM Studio and make sure 'lms' is on PATH." -ForegroundColor Yellow
+  }
 } else {
-  Write-Host "  LM Studio CLI not detected. Install LM Studio and make sure 'lms' is on PATH." -ForegroundColor Yellow
+  Write-Host "Skipping LM Studio CLI check."
 }
 
 Write-Host ""
@@ -66,6 +131,10 @@ Write-Host ""
 Write-Host "Verify local models:"
 Write-Host "  lms ps"
 Write-Host "  pi --list-models"
+
+Write-Host ""
+Write-Host "Backup agent:"
+Write-Host "  Start pi and use the backup-config agent when you want another snapshot under $backupRoot."
 
 Write-Host ""
 Write-Host "Optional Codex login:"

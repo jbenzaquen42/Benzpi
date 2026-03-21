@@ -19,6 +19,8 @@ Set-Location "$HOME\.pi\agent"
 .\setup.ps1
 ```
 
+The installer is interactive. It can create a timestamped backup of your current Pi config under `"$HOME\.pi_backup"` before it installs packages or checks LM Studio.
+
 ### Updating
 
 ```powershell
@@ -87,6 +89,7 @@ This config uses subagents, visible cmux terminals, local-first model defaults, 
 | **dotnet-worker** | `LM Studio/pi-local` | .NET specialist for C# apps, libraries, ASP.NET Core, and test workflows |
 | **docker-worker** | `LM Studio/pi-local` | Docker specialist for Dockerfiles, Compose stacks, and local service orchestration |
 | **env-doctor** | `LM Studio/pi-local` | Diagnoses broken local setup across Pi, LM Studio, MCP, Docker, and tooling |
+| **backup-config** | `LM Studio/pi-local` | Creates timestamped backups of your Pi config under `~/.pi_backup` |
 | **reviewer** | `LM Studio/pi-local` | Reviews code for correctness, risk, and quality |
 | **researcher** | `LM Studio/pi-local` | Uses installed research tools plus local code analysis |
 | **visual-tester** | `LM Studio/pi-local` | Visual QA through Chrome CDP |
@@ -164,6 +167,7 @@ Use a specialist worker when the dominant task matches its domain. Use the gener
 - `docker-worker`: `Update this Dockerfile for local development and verify the image still builds.`
 - `env-doctor`: `Diagnose why pi-local is not available even though LM Studio is running.`
 - `env-doctor`: `Figure out why Docker compose fails before the app starts.`
+- `backup-config`: `Create a backup of my current Pi config before I change anything.`
 
 For a longer operator guide with workflow examples, see [docs/agent-guide.md](docs/agent-guide.md).
 
