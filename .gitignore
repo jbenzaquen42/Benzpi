@@ -14,9 +14,14 @@ mcp-cache.json
 mcp-npx-cache.json
 run-history.jsonl
 session-manager-config.toml
+setup.bat
 
 # Extension dependencies (install locally)
 extensions/*/node_modules/
+
+# Skill-local build artifacts
+skills/**/bin/
+skills/**/obj/
 
 # OS files
 .DS_Store
