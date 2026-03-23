@@ -191,6 +191,8 @@ For a longer operator guide with workflow examples, see [docs/agent-guide.md](do
 
 ## Credits
 
+Most credit goes to [HazAT/pi-config](https://github.com/HazAT/pi-config): Most of the initial config and scripts came from you. Thank you! 
+
 Extensions from [mitsuhiko/agent-stuff](https://github.com/mitsuhiko/agent-stuff): `answer`, `todos`
 
 Skills from [mitsuhiko/agent-stuff](https://github.com/mitsuhiko/agent-stuff): `commit`, `github`
