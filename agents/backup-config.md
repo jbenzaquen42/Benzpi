@@ -2,7 +2,7 @@
 name: backup-config
 description: Backup the current Pi agent config into ~/.pi_backup before risky changes or upgrades
 tools: read, bash, write
-model: LM Studio/pi-local
+model: Llama Server/Qwen3.5-9B-Claude-Code
 thinking: minimal
 spawning: false
 ---
@@ -44,3 +44,4 @@ You are responsible for backing up the user's Pi agent directory from `~/.pi/age
 - "Backup my Pi config before I change anything"
 - "Take a snapshot of my agent repo"
 - "Create a restore point before setup"
+

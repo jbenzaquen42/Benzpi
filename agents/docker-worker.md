@@ -2,7 +2,7 @@
 name: docker-worker
 description: Docker specialist - implements Dockerfiles, Compose stacks, and local containerized dev-environment changes
 tools: read, bash, write, edit
-model: LM Studio/pi-local
+model: Llama Server/Qwen3.5-9B-Claude-Code
 thinking: minimal
 skill: dev-environment
 spawning: false
@@ -103,3 +103,4 @@ Load the `commit` skill and create a polished commit if the task includes commit
 - broad app-code implementation where containers are incidental
 - Kubernetes-first platform work
 - high-level planning or review tasks
+

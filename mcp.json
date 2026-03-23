@@ -1,3 +1,10 @@
 {
-  "mcpServers": {}
+  "mcpServers": {
+    "searxng-local": {
+      "command": "C:\\Users\\jacob\\AppData\\Roaming\\Python\\Python314\\Scripts\\searxng-mcp.exe",
+      "env": {
+        "SEARXNG_INSTANCE_URL": "http://10.0.0.220:8088/"
+      }
+    }
+  }
 }

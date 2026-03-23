@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Llama Admin</title>
+  <style>
+    :root { color-scheme: dark; --bg:#12151b; --panel:#1b212b; --line:#334155; --text:#e5edf7; --muted:#9fb0c7; --accent:#5cc8ff; --good:#6ee7b7; --bad:#fca5a5; }
+    body { margin:0; font:14px/1.4 Consolas, "SFMono-Regular", monospace; background:linear-gradient(180deg,#0d1117,#131924); color:var(--text); }
+    main { max-width:1200px; margin:0 auto; padding:24px; display:grid; gap:16px; grid-template-columns: 1.3fr 1fr; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; box-shadow:0 12px 40px rgba(0,0,0,.25); }
+    h1,h2 { margin:0 0 12px; font-weight:600; }
+    h1 { font-size:20px; color:var(--accent); }
+    h2 { font-size:15px; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+    button { background:#233041; color:var(--text); border:1px solid #41566f; border-radius:8px; padding:8px 12px; cursor:pointer; }
+    button:hover { background:#2d3d52; }
+    input, textarea, select { width:100%; background:#0f1722; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px; }
+    textarea { min-height:120px; resize:vertical; }
+    .grid { display:grid; gap:10px; grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .muted { color:var(--muted); }
+    .status-good { color:var(--good); }
+    .status-bad { color:var(--bad); }
+    pre { margin:0; white-space:pre-wrap; word-break:break-word; background:#0f1722; border:1px solid var(--line); border-radius:8px; padding:12px; max-height:360px; overflow:auto; }
+    a { color:var(--accent); }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <h1>Llama Admin</h1>
+      <div class="row">
+        <button onclick="refreshState()">Refresh</button>
+        <button onclick="startServer()">Start Router</button>
+        <button onclick="stopServer()">Stop Router</button>
+        <button onclick="rebuildModels()">Rebuild Inventory</button>
+        <a href="http://127.0.0.1:1234" target="_blank" rel="noreferrer">Open stock WebUI</a>
+      </div>
+      <div id="serverStatus" class="muted">Loading state...</div>
+      <h2 style="margin-top:16px;">Router settings</h2>
+      <div class="muted" style="margin-bottom:12px;">Per-model load and sampling defaults now live in each section of <code>config\\models.ini</code>. These fields are only the shared router settings.</div>
+      <div class="grid" id="runtimeFields"></div>
+      <div class="row" style="margin-top:12px;"><button onclick="saveRuntime()">Save router settings</button></div>
+      <h2 style="margin-top:16px;">Forward /props JSON</h2>
+      <textarea id="propsBox">{
+  "temperature": 0.7
+}</textarea>
+      <div class="row" style="margin-top:12px;"><button onclick="sendProps()">POST /props</button></div>
+      <pre id="propsResult" class="muted">No /props response yet.</pre>
+    </section>
+    <section class="card">
+      <h2>Models</h2>
+      <pre id="inventoryBox" class="muted">Loading inventory...</pre>
+      <h2 style="margin-top:16px;">Registered scripts</h2>
+      <div class="row">
+        <select id="scriptSelect"></select>
+        <button onclick="runSelectedScript()">Run Script</button>
+      </div>
+      <pre id="scriptResult" class="muted">No script run yet.</pre>
+      <h2 style="margin-top:16px;">Logs</h2>
+      <div class="row">
+        <button onclick="loadLogs('stderr')">Server stderr</button>
+        <button onclick="loadLogs('stdout')">Server stdout</button>
+        <button onclick="loadLogs('admin')">Admin log</button>
+      </div>
+      <pre id="logBox" class="muted">No logs loaded yet.</pre>
+    </section>
+  </main>
+  <script>
+    const runtimeKeys = [
+      ["host","Host"],["port","Port"],["adminHost","Admin Host"],["adminPort","Admin Port"],["modelsMax","Models Max"]
+    ];
+    let currentRuntime = {};
+    async function api(path, options) {
+      const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...options });
+      const text = await res.text();
+      try { return { ok: res.ok, status: res.status, body: JSON.parse(text) }; } catch { return { ok: res.ok, status: res.status, body: text }; }
+    }
+    function renderRuntime() {
+      const root = document.getElementById('runtimeFields');
+      root.innerHTML = '';
+      for (const [key, label] of runtimeKeys) {
+        const wrap = document.createElement('label');
+        wrap.innerHTML = `<div class="muted">${label}</div><input id="field-${key}" value="${currentRuntime[key] ?? ''}">`;
+        root.appendChild(wrap);
+      }
+    }
+    async function refreshState() {
+      const result = await api('/api/state');
+      if (!result.ok) { alert('Failed to load state'); return; }
+      currentRuntime = result.body.runtime || {};
+      renderRuntime();
+      const status = result.body.status || {};
+      document.getElementById('serverStatus').innerHTML = `Router: <span class="${status.reachable ? 'status-good' : 'status-bad'}">${status.reachable ? 'reachable' : 'stopped'}</span> | PID: ${status.pid ?? 'n/a'} | Models returned: ${(status.models || []).length}`;
+      document.getElementById('inventoryBox').textContent = JSON.stringify(result.body.inventory || [], null, 2);
+      const scripts = await api('/api/scripts');
+      const select = document.getElementById('scriptSelect');
+      select.innerHTML = '';
+      for (const item of scripts.body || []) {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.label;
+        select.appendChild(option);
+      }
+    }
+    async function saveRuntime() {
+      for (const [key] of runtimeKeys) {
+        currentRuntime[key] = document.getElementById(`field-${key}`).value;
+      }
+      for (const key of ['port','adminPort','modelsMax']) currentRuntime[key] = Number(currentRuntime[key]);
+      const result = await api('/api/runtime', { method:'POST', body: JSON.stringify(currentRuntime) });
+      document.getElementById('scriptResult').textContent = JSON.stringify(result.body, null, 2);
+    }
+    async function startServer() {
+      const result = await api('/api/start', { method:'POST', body:'{}' });
+      document.getElementById('scriptResult').textContent = JSON.stringify(result.body, null, 2);
+      await refreshState();
+    }
+    async function stopServer() {
+      const result = await api('/api/stop', { method:'POST', body:'{}' });
+      document.getElementById('scriptResult').textContent = JSON.stringify(result.body, null, 2);
+      await refreshState();
+    }
+    async function rebuildModels() {
+      const result = await api('/api/rebuild', { method:'POST', body:'{}' });
+      document.getElementById('scriptResult').textContent = JSON.stringify(result.body, null, 2);
+      await refreshState();
+    }
+    async function sendProps() {
+      const payload = JSON.parse(document.getElementById('propsBox').value);
+      const result = await api('/api/props', { method:'POST', body: JSON.stringify(payload) });
+      document.getElementById('propsResult').textContent = typeof result.body === 'string' ? result.body : JSON.stringify(result.body, null, 2);
+    }
+    async function loadLogs(name) {
+      const res = await fetch(`/api/logs?name=${encodeURIComponent(name)}`);
+      document.getElementById('logBox').textContent = await res.text();
+    }
+    async function runSelectedScript() {
+      const id = document.getElementById('scriptSelect').value;
+      const result = await api('/api/run-script', { method:'POST', body: JSON.stringify({ id }) });
+      document.getElementById('scriptResult').textContent = JSON.stringify(result.body, null, 2);
+    }
+    refreshState();
+  </script>
+</body>
+</html>

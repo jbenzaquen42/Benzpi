@@ -1,0 +1,90 @@
+{
+  "providers": {
+    "LM Studio": {
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "api": "openai-completions",
+      "baseUrl": "http://127.0.0.1:1234/v1",
+      "models": [
+        {
+          "id": "Qwen3.5-9B-Claude-Code",
+          "cost": {
+            "output": 0,
+            "cacheWrite": 0,
+            "input": 0,
+            "cacheRead": 0
+          },
+          "name": "Qwen3.5-9B-Claude-Code",
+          "contextWindow": 32768,
+          "maxTokens": 16384,
+          "input": [
+            "text"
+          ],
+          "reasoning": false
+        },
+        {
+          "id": "Huihui-Qwen3-Coder-30B-A3B-Instruct-abliterated-i1",
+          "cost": {
+            "output": 0,
+            "cacheWrite": 0,
+            "input": 0,
+            "cacheRead": 0
+          },
+          "name": "Huihui-Qwen3-Coder-30B-A3B-Instruct-abliterated-i1",
+          "contextWindow": 32768,
+          "maxTokens": 16384,
+          "input": [
+            "text"
+          ],
+          "reasoning": false
+        }
+      ],
+      "apiKey": "lm-studio"
+    },
+    "Llama Server": {
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "api": "openai-completions",
+      "baseUrl": "http://127.0.0.1:1234/v1",
+            "models": [
+        {
+          "id": "Qwen3.5-9B-Claude-Code",
+          "cost": {
+            "output": 0,
+            "cacheWrite": 0,
+            "input": 0,
+            "cacheRead": 0
+          },
+          "name": "Qwen3.5-9B-Claude-Code",
+          "contextWindow": 32768,
+          "maxTokens": 16384,
+          "input": [
+            "text"
+          ],
+          "reasoning": false
+        },
+        {
+          "id": "Huihui-Qwen3-Coder-30B-A3B-Instruct-abliterated-i1",
+          "cost": {
+            "output": 0,
+            "cacheWrite": 0,
+            "input": 0,
+            "cacheRead": 0
+          },
+          "name": "Huihui-Qwen3-Coder-30B-A3B-Instruct-abliterated-i1",
+          "contextWindow": 32768,
+          "maxTokens": 16384,
+          "input": [
+            "text"
+          ],
+          "reasoning": false
+        }
+      ],
+      "apiKey": "llama-server"
+    }
+  }
+}

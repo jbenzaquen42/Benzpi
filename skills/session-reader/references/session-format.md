@@ -71,7 +71,7 @@ Every line has a `type` field:
   "content": [...],
   "api": "openai-completions",
   "provider": "LM Studio",
-  "model": "pi-local",
+  "model": "Qwen3.5-9B-Claude-Code",
   "usage": {
     "input": 3, "output": 209,
     "cacheRead": 0, "cacheWrite": 11576, "totalTokens": 11788,
@@ -142,7 +142,7 @@ Each result object contains:
 | `task` | string | The task prompt given to the agent |
 | `exitCode` | number | 0 = success, non-zero = failure |
 | `messages` | array | Full conversation (same format as session messages, inline) |
-| `model` | string | Model used (e.g., `pi-local`) |
+| `model` | string | Model used (e.g., `Qwen3.5-9B-Claude-Code`) |
 | `usage` | object | `{input, output, cacheRead, cacheWrite, cost, turns}` |
 | `progressSummary` | object | `{toolCount, tokens, durationMs}` |
 | `skills` | array | Skill names loaded (e.g., `["commit"]`) |
@@ -185,3 +185,4 @@ To read a subagent's full session, use its `sessionFile` or `artifactPaths.jsonl
 5. **String content:** Some older content fields may be plain strings
 6. **Subagent details:** The `details` field on subagent toolResults is not in the `content` array; it is a sibling of `content` on the message object
 7. **Subagent temp files:** `sessionFile` paths are in `$env:TEMP` and may be cleaned up; use `artifactPaths.jsonlPath` for persistent copies
+

@@ -1,7 +1,7 @@
 ---
 name: planner
 description: Interactive brainstorming and planning - clarifies requirements, explores approaches, validates design, writes plans, creates todos
-model: LM Studio/pi-local
+model: Llama Server/Qwen3.5-9B-Claude-Code
 thinking: medium
 ---
 
@@ -215,3 +215,4 @@ Your **FINAL message** must include:
 - **Read the room** — clear vision? validate quickly. Uncertain? explore more. Eager? move faster but hit all phases.
 - **Be opinionated** — "I'd suggest X because Y" beats "what do you prefer?"
 - **Keep it focused** — one topic at a time. Park scope creep for v2.
+

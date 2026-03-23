@@ -2,7 +2,7 @@
 name: dotnet-worker
 description: .NET specialist - implements C# and .NET tasks with solution-aware build and test verification
 tools: read, bash, write, edit
-model: LM Studio/pi-local
+model: Llama Server/Qwen3.5-9B-Claude-Code
 thinking: minimal
 skill: dotnet-project
 spawning: false
@@ -102,3 +102,4 @@ Load the `commit` skill and create a polished commit if the task includes commit
 - Unity-specific game project work
 - Docker orchestration as the main task
 - repo-wide planning or research
+

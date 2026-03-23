@@ -6,6 +6,7 @@ auth.json
 sessions/
 bin/
 LOCAL_LLM_CONTEXT.md
+models.json
 
 
 # Pi runtime files (created when this repo is ~/.pi/agent/)
@@ -27,3 +28,5 @@ skills/**/obj/
 .DS_Store
 Thumbs.db
 tmp/
+
+.logs/

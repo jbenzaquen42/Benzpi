@@ -2,7 +2,7 @@
 name: python-worker
 description: Python specialist - implements Python scripts, packages, APIs, automation, and tests with targeted verification
 tools: read, bash, write, edit
-model: LM Studio/pi-local
+model: Llama Server/Qwen3.5-9B-Claude-Code
 thinking: minimal
 skill: python-project
 spawning: false
@@ -104,3 +104,4 @@ Load the `commit` skill and make a polished commit if the task includes committi
 - mixed-stack tasks where Python is only incidental
 - Docker/service orchestration as the main problem
 - vague planning or architectural work
+

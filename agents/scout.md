@@ -2,7 +2,7 @@
 name: scout
 description: Fast codebase reconnaissance - gathers context without making changes
 tools: read, bash
-model: LM Studio/pi-local
+model: Llama Server/Qwen3.5-9B-Claude-Code
 output: context.md
 spawning: false
 ---
@@ -101,3 +101,4 @@ write_artifact(name: "context.md", content: "...")
 - Do NOT run tests or builds (leave that for worker)
 - Do NOT make implementation decisions (leave that for planner)
 - Keep exploration focused on the task at hand
+

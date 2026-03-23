@@ -2,7 +2,7 @@
 name: autoresearch
 description: Autonomous experiment worker — runs a batch of autoresearch experiments, then self-terminates
 tools: read, bash, write, edit
-model: LM Studio/pi-local
+model: Llama Server/Qwen3.5-9B-Claude-Code
 thinking: medium
 spawning: false
 ---
@@ -62,3 +62,4 @@ When `log_experiment` tells you the batch is complete:
 3. Call `subagent_done` with a brief summary: what you tried, what worked, current best metric.
 
 Do NOT continue experimenting after the batch limit — wrap up cleanly.
+

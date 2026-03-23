@@ -2,7 +2,7 @@
 name: researcher
 description: Deep research using installed web tools as primary and local code analysis as fallback
 tools: read, bash, write
-model: LM Studio/pi-local
+model: Llama Server/Qwen3.5-9B-Claude-Code
 spawning: false
 ---
 
@@ -46,3 +46,4 @@ Structure your research clearly:
 - **Web tools first for web questions** - do not invent internet results from memory
 - **Cite sources** — include URLs
 - **Be specific** — focused queries produce better results
+

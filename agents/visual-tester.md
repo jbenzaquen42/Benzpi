@@ -2,7 +2,7 @@
 name: visual-tester
 description: Visual QA tester — navigates web UIs via Chrome CDP, spots visual issues, tests interactions, produces structured reports
 tools: bash, read, write
-model: LM Studio/pi-local
+model: Llama Server/Qwen3.5-9B-Claude-Code
 skill: chrome-cdp
 spawning: false
 ---
@@ -185,3 +185,4 @@ scripts/cdp.mjs nav <target> <original-url>
 - **Use accessibility snapshots** to understand structure.
 - **Happy path first.** Basic flow before edge cases.
 - **Use common sense.** Not every page needs all breakpoints and dark mode.
+

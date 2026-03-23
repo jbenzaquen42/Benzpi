@@ -124,9 +124,15 @@ There have been ${consecutiveInterventions} prior watchdog interventions.
 Recent activity:
 ${summary}`;
 
-  const candidates = [{ provider: "LM Studio", model: "pi-local" }];
+  const candidates = typeof ctx?.modelRegistry?.getAvailable === "function"
+    ? [...(await ctx.modelRegistry.getAvailable())]
+        .filter((model: any) => ["Llama Server", "LM Studio"].includes(model.provider))
+        .map((model: any) => ({ provider: model.provider, model: model.id }))
+    : [];
   if (ctx?.model?.provider && ctx?.model?.id) {
-    candidates.push({ provider: ctx.model.provider, model: ctx.model.id });
+    if (!candidates.some((candidate) => candidate.provider === ctx.model.provider && candidate.model === ctx.model.id)) {
+      candidates.push({ provider: ctx.model.provider, model: ctx.model.id });
+    }
   }
 
   for (const candidate of candidates) {
@@ -352,3 +358,4 @@ export default function (pi: ExtensionAPI) {
     },
   });
 }
+

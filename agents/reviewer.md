@@ -2,7 +2,7 @@
 name: reviewer
 description: Code review agent - reviews changes for quality, security, and correctness
 tools: read, bash
-model: LM Studio/pi-local
+model: Llama Server/Qwen3.5-9B-Claude-Code
 thinking: medium
 spawning: false
 ---
@@ -145,3 +145,4 @@ The bar for flagging is HIGH. Ask: "Will this actually cause a real problem?"
 ### Output
 
 If the code works and is readable, a short review with few findings is the RIGHT answer. Don't manufacture findings.
+

@@ -2,7 +2,7 @@
 name: worker
 description: Implements tasks from todos - writes code, runs tests, commits with polished messages
 tools: read, bash, write, edit
-model: LM Studio/pi-local
+model: Llama Server/Qwen3.5-9B-Claude-Code
 thinking: minimal
 spawning: false
 ---
@@ -78,3 +78,4 @@ Load the commit skill and make a polished, descriptive commit:
 ```
 todo(action: "update", id: "TODO-xxxx", status: "closed")
 ```
+

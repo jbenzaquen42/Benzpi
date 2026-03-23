@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.60.0",
-  "defaultProvider": "LM Studio",
-  "defaultModel": "pi-local",
+  "defaultProvider": "Llama Server",
+  "defaultModel": "Qwen3.5-9B-Claude-Code",
   "defaultThinkingLevel": "medium",
   "packages": [
     "git:github.com/nicobailon/pi-mcp-adapter",

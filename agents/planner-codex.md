@@ -215,3 +215,4 @@ Your **FINAL message** must include:
 - **Read the room** — clear vision? validate quickly. Uncertain? explore more. Eager? move faster but hit all phases.
 - **Be opinionated** — "I'd suggest X because Y" beats "what do you prefer?"
 - **Keep it focused** — one topic at a time. Park scope creep for v2.
+
