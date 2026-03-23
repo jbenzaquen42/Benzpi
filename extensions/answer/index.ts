@@ -72,12 +72,12 @@ Example output:
   ]
 }`;
 
-
+const LOCAL_MODEL_ID = "pi-local";
 const PREFERRED_LOCAL_PROVIDERS = ["Llama Server", "LM Studio"] as const;
 
 /**
  * Prefer the current local model when one of the supported local providers is
- * already active. Otherwise prefer the first configured local model before falling
+ * already active. Otherwise prefer the shared pi-local alias before falling
  * back to the current model.
  */
 async function selectExtractionModel(
@@ -95,21 +95,21 @@ async function selectExtractionModel(
 	if (typeof modelRegistry.getAvailable === "function") {
 		const availableModels = await modelRegistry.getAvailable();
 		for (const provider of PREFERRED_LOCAL_PROVIDERS) {
-			const localModel = availableModels.find((model) => model.provider === provider);
+			const localModel = availableModels.find(
+				(model) => model.provider === provider && model.id === LOCAL_MODEL_ID,
+			);
 			if (localModel) {
 				return localModel;
 			}
 		}
 	}
 
-	if (typeof modelRegistry.getAvailable === "function") {
-		const availableModels = await modelRegistry.getAvailable();
-		for (const provider of PREFERRED_LOCAL_PROVIDERS) {
-			for (const localModel of availableModels.filter((model) => model.provider === provider)) {
-				const apiKey = await modelRegistry.getApiKey(localModel);
-				if (apiKey !== undefined) {
-					return localModel;
-				}
+	for (const provider of PREFERRED_LOCAL_PROVIDERS) {
+		const localModel = modelRegistry.find(provider, LOCAL_MODEL_ID);
+		if (localModel) {
+			const apiKey = await modelRegistry.getApiKey(localModel);
+			if (apiKey !== undefined) {
+				return localModel;
 			}
 		}
 	}
@@ -628,4 +628,3 @@ export default function (pi: ExtensionAPI) {
 		answerHandler(ctx);
 	});
 }
-

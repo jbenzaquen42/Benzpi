@@ -2,7 +2,7 @@
 name: reviewer
 description: Code review agent - reviews changes for quality, security, and correctness
 tools: read, bash
-model: Llama Server/Qwen3.5-9B-Claude-Code
+model: Llama Server/pi-local
 thinking: medium
 spawning: false
 ---

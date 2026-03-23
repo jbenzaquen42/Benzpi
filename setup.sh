@@ -55,9 +55,9 @@ set_configured_backend() {
   local config_dir="$1"
   local provider="$2"
   sed -i.bak "s/\"defaultProvider\": \".*\"/\"defaultProvider\": \"$provider\"/" "$config_dir/settings.json"
-  sed -i.bak "s/\"defaultModel\": \".*\"/\"defaultModel\": \"Qwen3.5-9B-Claude-Code\"/" "$config_dir/settings.json"
+  sed -i.bak "s/\"defaultModel\": \".*\"/\"defaultModel\": \"pi-local\"/" "$config_dir/settings.json"
   find "$config_dir/agents" -name '*.md' -type f -print0 | while IFS= read -r -d '' file; do
-    sed -i.bak "0,/^model: .*\\/[^/]+/s//model: $provider\\/Qwen3.5-9B-Claude-Code/" "$file"
+    sed -i.bak "0,/^model: .*\\/[^/]+/s//model: $provider\\/pi-local/" "$file"
     rm -f "$file.bak"
   done
   rm -f "$config_dir/settings.json.bak"
@@ -180,15 +180,15 @@ echo
 if [ "$SELECTED_PROVIDER" = "LM Studio" ]; then
   echo "Recommended LM Studio load commands:"
   echo "  lms server start"
-  echo "  lms load <your-chosen-local-model> --identifier Qwen3.5-9B-Claude-Code -c 32768"
+  echo "  lms load <your-chosen-local-model> --identifier pi-local -c 32768"
   echo
   echo "Examples:"
-  echo "  lms load huihui-qwen3-coder-30b-a3b-instruct-abliterated-i1 --identifier Qwen3.5-9B-Claude-Code -c 32768"
-  echo "  lms load qwen3.5-9b-claude-code --identifier Qwen3.5-9B-Claude-Code -c 32768"
+  echo "  lms load huihui-qwen3-coder-30b-a3b-instruct-abliterated-i1 --identifier pi-local -c 32768"
+  echo "  lms load qwen3.5-9b-claude-code --identifier pi-local -c 32768"
 else
   echo "Recommended llama server setup:"
   echo "  Start llama-server with your preferred model and expose an OpenAI-compatible API on http://127.0.0.1:1234/v1"
-  echo "  Keep the model name exposed as Qwen3.5-9B-Claude-Code if your launcher supports aliases, or keep a single model loaded."
+  echo "  Keep the model name exposed as pi-local if your launcher supports aliases, or keep a single model loaded."
 fi
 
 echo
@@ -211,5 +211,5 @@ echo "  Use planner-codex, reviewer-codex, or researcher-codex when you want clo
 
 echo
 echo "Setup complete."
-echo "Restart pi after your Qwen3.5-9B-Claude-Code local model is available through $SELECTED_PROVIDER."
+echo "Restart pi after your pi-local local model is available through $SELECTED_PROVIDER."
 

@@ -181,16 +181,16 @@ You can execute slash commands yourself using the `execute_command` tool:
 
 | Agent | Purpose | Model |
 |-------|---------|-------|
-| `scout` | Fast codebase reconnaissance | Llama Server `Qwen3.5-9B-Claude-Code` |
-| `worker` | Implements tasks from todos, makes polished commits (always using the `commit` skill), and closes the todo | Llama Server `Qwen3.5-9B-Claude-Code` |
-| `python-worker` | Implements Python scripts, packages, tooling, APIs, and tests with Python-aware verification | Llama Server `Qwen3.5-9B-Claude-Code` |
-| `dotnet-worker` | Implements C# and .NET tasks with solution-aware build and test verification | Llama Server `Qwen3.5-9B-Claude-Code` |
-| `docker-worker` | Implements Dockerfiles, Compose stacks, and local containerized dev-environment work | Llama Server `Qwen3.5-9B-Claude-Code` |
-| `env-doctor` | Diagnoses broken local setup across Pi, llama-server, LM Studio, MCP, Docker, and tooling | Llama Server `Qwen3.5-9B-Claude-Code` |
-| `backup-config` | Backs up the current Pi config to `~/.pi_backup` | Llama Server `Qwen3.5-9B-Claude-Code` |
-| `reviewer` | Reviews code for quality/security | Llama Server `Qwen3.5-9B-Claude-Code` |
-| `researcher` | Deep research using installed web tools plus local code analysis | Llama Server `Qwen3.5-9B-Claude-Code` |
-| `planner` | Interactive brainstorming and planning - clarifies requirements, explores approaches, writes plans, creates todos | Llama Server `Qwen3.5-9B-Claude-Code` |
+| `scout` | Fast codebase reconnaissance | Llama Server `pi-local` |
+| `worker` | Implements tasks from todos, makes polished commits (always using the `commit` skill), and closes the todo | Llama Server `pi-local` |
+| `python-worker` | Implements Python scripts, packages, tooling, APIs, and tests with Python-aware verification | Llama Server `pi-local` |
+| `dotnet-worker` | Implements C# and .NET tasks with solution-aware build and test verification | Llama Server `pi-local` |
+| `docker-worker` | Implements Dockerfiles, Compose stacks, and local containerized dev-environment work | Llama Server `pi-local` |
+| `env-doctor` | Diagnoses broken local setup across Pi, llama-server, LM Studio, MCP, Docker, and tooling | Llama Server `pi-local` |
+| `backup-config` | Backs up the current Pi config to `~/.pi_backup` | Llama Server `pi-local` |
+| `reviewer` | Reviews code for quality/security | Llama Server `pi-local` |
+| `researcher` | Deep research using installed web tools plus local code analysis | Llama Server `pi-local` |
+| `planner` | Interactive brainstorming and planning - clarifies requirements, explores approaches, writes plans, creates todos | Llama Server `pi-local` |
 | `planner-codex` | Optional cloud planning offload | `openai-codex/gpt-5.4` |
 | `reviewer-codex` | Optional cloud review offload | `openai-codex/gpt-5.4` |
 | `researcher-codex` | Optional cloud research offload | `openai-codex/gpt-5.4` |
@@ -231,7 +231,7 @@ subagent({
 subagent({ name: "Iterate", interactive: true, fork: true, task: "Fix the bug where..." })
 
 // Override agent defaults when needed
-subagent({ name: "Worker", agent: "worker", model: "Llama Server/Qwen3.5-9B-Claude-Code", task: "Quick fix..." })
+subagent({ name: "Worker", agent: "worker", model: "Llama Server/pi-local", task: "Quick fix..." })
 
 // Parallel subagents - run multiple agents concurrently with tiled layout
 parallel_subagents({
@@ -330,7 +330,7 @@ subagent({
 ##### `env-doctor`
 
 - **Purpose:** Diagnose broken local setup and toolchain wiring.
-- **Typical tasks:** `Qwen3.5-9B-Claude-Code` problems, llama-server or LM Studio connectivity, MCP connection issues, Docker daemon issues, PATH/tool failures.
+- **Typical tasks:** `pi-local` problems, llama-server or LM Studio connectivity, MCP connection issues, Docker daemon issues, PATH/tool failures.
 - **Do not use for:** Normal feature implementation, planning, or code review.
 - **Why it exists:** Environment failures are a different class of problem from product code and should be isolated for faster recovery.
 - **Relationship to other agents:** Unblocks all other agents by restoring a healthy environment; once the environment is healthy, normal work should hand off to the right specialist.

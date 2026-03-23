@@ -2,7 +2,7 @@
 name: backup-config
 description: Backup the current Pi agent config into ~/.pi_backup before risky changes or upgrades
 tools: read, bash, write
-model: Llama Server/Qwen3.5-9B-Claude-Code
+model: Llama Server/pi-local
 thinking: minimal
 spawning: false
 ---

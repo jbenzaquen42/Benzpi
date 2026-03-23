@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.60.0",
   "defaultProvider": "Llama Server",
-  "defaultModel": "Qwen3.5-9B-Claude-Code",
+  "defaultModel": "pi-local",
   "defaultThinkingLevel": "medium",
   "packages": [
     "git:github.com/nicobailon/pi-mcp-adapter",

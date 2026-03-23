@@ -66,7 +66,7 @@ interface PaletteState {
 }
 
 const SUMMARY_DIR = "session-summaries";
-
+const LOCAL_MODEL_ID = "pi-local";
 const PREFERRED_LOCAL_PROVIDERS = ["Llama Server", "LM Studio"] as const;
 const SUMMARY_TIMEOUT_MS = 30_000;
 
@@ -223,12 +223,11 @@ function readGitState(cwd: string): { gitBranch?: string; changedFiles: string[]
 }
 
 async function selectSummaryModel(ctx: ExtensionContext): Promise<Model<any> | undefined> {
-  const available = await Promise.resolve(ctx.modelRegistry.getAvailable());
   for (const provider of PREFERRED_LOCAL_PROVIDERS) {
-    for (const local of available.filter((model) => model.provider === provider)) {
-      const localKey = await ctx.modelRegistry.getApiKey(local);
-      if (localKey !== undefined) return local;
-    }
+    const local = ctx.modelRegistry.find(provider, LOCAL_MODEL_ID);
+    if (!local) continue;
+    const localKey = await ctx.modelRegistry.getApiKey(local);
+    if (localKey !== undefined) return local;
   }
   return ctx.model;
 }
@@ -983,7 +982,7 @@ async function openHub(ctx: ExtensionCommandContext): Promise<string | void> {
     return "hub requires interactive mode";
   }
 
-    const availableModels = await Promise.resolve(ctx.modelRegistry.getAvailable());
+    const availableModels = ctx.modelRegistry.getAvailable();
     const codexAvailable = availableModels.some((model) =>
       model.provider === "openai-codex" ||
       `${model.provider}/${model.id}` === "openai-codex/gpt-5.4"
@@ -1106,7 +1105,3 @@ async function openHub(ctx: ExtensionCommandContext): Promise<string | void> {
     handler: (ctx) => openHub(ctx as ExtensionCommandContext),
   });
 }
-
-
-
-

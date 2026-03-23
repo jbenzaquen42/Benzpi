@@ -1,282 +1,44 @@
 {
   "providers": {
-    "LM Studio": {
-      "compat": {
-        "supportsDeveloperRole": false,
-        "supportsReasoningEffort": false
-      },
-      "api": "openai-completions",
-      "baseUrl": "http://127.0.0.1:1234/v1",
-      "models": [
-        {
-          "id": "Qwen3.5-9B-Claude-Code",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "Qwen3.5-9B-Claude-Code",
-          "contextWindow": 32768,
-          "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
-        },
-        {
-          "id": "Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive",
-          "contextWindow": 32768,
-          "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
-        },
-        {
-          "id": "Qwen3.5-9B-Claude-4.6-Opus-Uncensored-Distilled",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "Qwen3.5-9B-Claude-4.6-Opus-Uncensored-Distilled",
-          "contextWindow": 32768,
-          "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
-        },
-        {
-          "id": "DeepHat-V1-7B",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "DeepHat-V1-7B",
-          "contextWindow": 32768,
-          "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
-        },
-        {
-          "id": "Huihui-Qwen3-Coder-30B-A3B-Instruct-abliterated-i1",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "Huihui-Qwen3-Coder-30B-A3B-Instruct-abliterated-i1",
-          "contextWindow": 32768,
-          "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
-        },
-        {
-          "id": "Mistral-Nemo-2407-12B-Thinking-Claude-Gemini-GPT5.2-Uncensored-HERETIC",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "Mistral-Nemo-2407-12B-Thinking-Claude-Gemini-GPT5.2-Uncensored-HERETIC",
-          "contextWindow": 32768,
-          "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
-        },
-        {
-          "id": "XORTRON.CriminalComputing.2026.27B.Instruct-i1",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "XORTRON.CriminalComputing.2026.27B.Instruct-i1",
-          "contextWindow": 32768,
-          "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
-        },
-        {
-          "id": "Huihui-Qwen3-VL-8B-Instruct-abliterated-Q6_K",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "Huihui-Qwen3-VL-8B-Instruct-abliterated-Q6_K",
-          "contextWindow": 32768,
-          "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
-        }
-      ],
-      "apiKey": "lm-studio"
-    },
     "Llama Server": {
+      "baseUrl": "http://127.0.0.1:1234/v1",
+      "api": "openai-completions",
+      "apiKey": "llama-server",
       "compat": {
         "supportsDeveloperRole": false,
         "supportsReasoningEffort": false
       },
-      "api": "openai-completions",
-      "baseUrl": "http://127.0.0.1:1234/v1",
       "models": [
         {
-          "id": "Qwen3.5-9B-Claude-Code",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "Qwen3.5-9B-Claude-Code",
+          "id": "pi-local",
+          "name": "Current llama-server local model",
+          "reasoning": false,
+          "input": ["text"],
           "contextWindow": 32768,
           "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
-        },
-        {
-          "id": "Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive",
-          "contextWindow": 32768,
-          "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
-        },
-        {
-          "id": "Qwen3.5-9B-Claude-4.6-Opus-Uncensored-Distilled",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "Qwen3.5-9B-Claude-4.6-Opus-Uncensored-Distilled",
-          "contextWindow": 32768,
-          "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
-        },
-        {
-          "id": "DeepHat-V1-7B",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "DeepHat-V1-7B",
-          "contextWindow": 32768,
-          "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
-        },
-        {
-          "id": "Huihui-Qwen3-Coder-30B-A3B-Instruct-abliterated-i1",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "Huihui-Qwen3-Coder-30B-A3B-Instruct-abliterated-i1",
-          "contextWindow": 32768,
-          "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
-        },
-        {
-          "id": "Mistral-Nemo-2407-12B-Thinking-Claude-Gemini-GPT5.2-Uncensored-HERETIC",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "Mistral-Nemo-2407-12B-Thinking-Claude-Gemini-GPT5.2-Uncensored-HERETIC",
-          "contextWindow": 32768,
-          "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
-        },
-        {
-          "id": "XORTRON.CriminalComputing.2026.27B.Instruct-i1",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "XORTRON.CriminalComputing.2026.27B.Instruct-i1",
-          "contextWindow": 32768,
-          "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
-        },
-        {
-          "id": "Huihui-Qwen3-VL-8B-Instruct-abliterated-Q6_K",
-          "cost": {
-            "output": 0,
-            "cacheWrite": 0,
-            "input": 0,
-            "cacheRead": 0
-          },
-          "name": "Huihui-Qwen3-VL-8B-Instruct-abliterated-Q6_K",
-          "contextWindow": 32768,
-          "maxTokens": 16384,
-          "input": [
-            "text"
-          ],
-          "reasoning": false
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
         }
-      ],
-      "apiKey": "llama-server"
+      ]
+    },
+    "LM Studio": {
+      "baseUrl": "http://127.0.0.1:1234/v1",
+      "api": "openai-completions",
+      "apiKey": "lm-studio",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "pi-local",
+          "name": "Current LM Studio local model",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 32768,
+          "maxTokens": 16384,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+        }
+      ]
     }
   }
 }

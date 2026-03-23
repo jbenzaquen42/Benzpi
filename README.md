@@ -46,7 +46,7 @@ pi --list-models
 ```powershell
 lms ls
 lms server start
-lms load <your-chosen-local-model> --identifier Qwen3.5-9B-Claude-Code -c 32768
+lms load <your-chosen-local-model> --identifier pi-local -c 32768
 lms ps
 pi --list-models
 ```
@@ -54,11 +54,11 @@ pi --list-models
 Example loads:
 
 ```powershell
-lms load huihui-qwen3-coder-30b-a3b-instruct-abliterated-i1 --identifier Qwen3.5-9B-Claude-Code -c 32768
-lms load qwen3.5-9b-claude-code --identifier Qwen3.5-9B-Claude-Code -c 32768
+lms load huihui-qwen3-coder-30b-a3b-instruct-abliterated-i1 --identifier pi-local -c 32768
+lms load qwen3.5-9b-claude-code --identifier pi-local -c 32768
 ```
 
-The repo does not require `pi-fast`, `pi-main`, or `pi-heavy`. The shipped config uses named local models instead of a shared alias and defaults Pi to `Llama Server/Qwen3.5-9B-Claude-Code`.
+The repo does not require `pi-fast`, `pi-main`, or `pi-heavy`. The shipped config uses named local models instead of a shared alias and defaults Pi to `Llama Server/pi-local`.
 
 ## Codex OAuth
 
@@ -86,25 +86,25 @@ This config uses subagents, visible cmux terminals, local-first model defaults, 
 
 - `agents/*.md` defines the role, default model, and workflow for each specialist.
 - `models.json` defines the shipped named local models Pi can call against either local provider.
-- `settings.json` defaults to `Llama Server` on `Qwen3.5-9B-Claude-Code`.
+- `settings.json` defaults to `Llama Server` on `pi-local`.
 - `/login` is the optional online path for native Codex OAuth.
 
 ## Agents
 
 | Agent | Default model | Purpose |
 |-------|---------------|---------|
-| **planner** | `Llama Server/Qwen3.5-9B-Claude-Code` | Interactive brainstorming, planning, and todo creation |
-| **scout** | `Llama Server/Qwen3.5-9B-Claude-Code` | Fast reconnaissance and codebase mapping |
-| **worker** | `Llama Server/Qwen3.5-9B-Claude-Code` | Implements scoped tasks and verifies results |
-| **python-worker** | `Llama Server/Qwen3.5-9B-Claude-Code` | Python specialist for scripts, packages, tooling, APIs, and tests |
-| **dotnet-worker** | `Llama Server/Qwen3.5-9B-Claude-Code` | .NET specialist for C# apps, libraries, ASP.NET Core, and test workflows |
-| **docker-worker** | `Llama Server/Qwen3.5-9B-Claude-Code` | Docker specialist for Dockerfiles, Compose stacks, and local service orchestration |
-| **env-doctor** | `Llama Server/Qwen3.5-9B-Claude-Code` | Diagnoses broken local setup across Pi, llama-server, LM Studio, MCP, Docker, and tooling |
-| **backup-config** | `Llama Server/Qwen3.5-9B-Claude-Code` | Creates timestamped backups of your Pi config under `~/.pi_backup` |
-| **reviewer** | `Llama Server/Qwen3.5-9B-Claude-Code` | Reviews code for correctness, risk, and quality |
-| **researcher** | `Llama Server/Qwen3.5-9B-Claude-Code` | Uses installed research tools plus local code analysis |
-| **visual-tester** | `Llama Server/Qwen3.5-9B-Claude-Code` | Visual QA through Chrome CDP |
-| **autoresearch** | `Llama Server/Qwen3.5-9B-Claude-Code` | Autonomous experiment loop |
+| **planner** | `Llama Server/pi-local` | Interactive brainstorming, planning, and todo creation |
+| **scout** | `Llama Server/pi-local` | Fast reconnaissance and codebase mapping |
+| **worker** | `Llama Server/pi-local` | Implements scoped tasks and verifies results |
+| **python-worker** | `Llama Server/pi-local` | Python specialist for scripts, packages, tooling, APIs, and tests |
+| **dotnet-worker** | `Llama Server/pi-local` | .NET specialist for C# apps, libraries, ASP.NET Core, and test workflows |
+| **docker-worker** | `Llama Server/pi-local` | Docker specialist for Dockerfiles, Compose stacks, and local service orchestration |
+| **env-doctor** | `Llama Server/pi-local` | Diagnoses broken local setup across Pi, llama-server, LM Studio, MCP, Docker, and tooling |
+| **backup-config** | `Llama Server/pi-local` | Creates timestamped backups of your Pi config under `~/.pi_backup` |
+| **reviewer** | `Llama Server/pi-local` | Reviews code for correctness, risk, and quality |
+| **researcher** | `Llama Server/pi-local` | Uses installed research tools plus local code analysis |
+| **visual-tester** | `Llama Server/pi-local` | Visual QA through Chrome CDP |
+| **autoresearch** | `Llama Server/pi-local` | Autonomous experiment loop |
 
 Codex offload agents:
 
@@ -127,8 +127,8 @@ Codex offload agents:
 
 The helper extensions are local-first too:
 
-- `answer` prefers the active local session model, then `Llama Server/Qwen3.5-9B-Claude-Code`, then `LM Studio/Qwen3.5-9B-Claude-Code`, then falls back to the current model.
-- `watchdog` tries `Llama Server/Qwen3.5-9B-Claude-Code` first, then `LM Studio/Qwen3.5-9B-Claude-Code`, then the current session model.
+- `answer` prefers the active local session model, then `Llama Server/pi-local`, then `LM Studio/pi-local`, then falls back to the current model.
+- `watchdog` tries `Llama Server/pi-local` first, then `LM Studio/pi-local`, then the current session model.
 
 ## Packages
 
@@ -176,7 +176,7 @@ Use a specialist worker when the dominant task matches its domain. Use the gener
 - `dotnet-worker`: `Fix this failing .NET test and keep the change scoped to the right project.`
 - `docker-worker`: `Debug why this compose stack fails locally and verify the affected service comes up.`
 - `docker-worker`: `Update this Dockerfile for local development and verify the image still builds.`
-- `env-doctor`: `Diagnose why Qwen3.5-9B-Claude-Code is not available even though my llama server is running.`
+- `env-doctor`: `Diagnose why pi-local is not available even though my llama server is running.`
 - `env-doctor`: `Figure out why Docker compose fails before the app starts.`
 - `backup-config`: `Create a backup of my current Pi config before I change anything.`
 
@@ -185,7 +185,7 @@ For a longer operator guide with workflow examples, see [docs/agent-guide.md](do
 ## Notes
 
 - This repo is intentionally Windows-first and local-first.
-- The main path is named local models served by llama-server, with `Qwen3.5-9B-Claude-Code` as Pi's default selection.
+- The main path is named local models served by llama-server, with `pi-local` as Pi's default selection.
 - Codex is an explicit secondary path through `planner-codex`, `reviewer-codex`, and `researcher-codex`.
 - API-key-based OpenAI usage is still possible in Pi generally, but it is not the primary path for this config.
 

@@ -71,7 +71,7 @@ Every line has a `type` field:
   "content": [...],
   "api": "openai-completions",
   "provider": "LM Studio",
-  "model": "Qwen3.5-9B-Claude-Code",
+  "model": "pi-local",
   "usage": {
     "input": 3, "output": 209,
     "cacheRead": 0, "cacheWrite": 11576, "totalTokens": 11788,
@@ -142,7 +142,7 @@ Each result object contains:
 | `task` | string | The task prompt given to the agent |
 | `exitCode` | number | 0 = success, non-zero = failure |
 | `messages` | array | Full conversation (same format as session messages, inline) |
-| `model` | string | Model used (e.g., `Qwen3.5-9B-Claude-Code`) |
+| `model` | string | Model used (e.g., `pi-local`) |
 | `usage` | object | `{input, output, cacheRead, cacheWrite, cost, turns}` |
 | `progressSummary` | object | `{toolCount, tokens, durationMs}` |
 | `skills` | array | Skill names loaded (e.g., `["commit"]`) |

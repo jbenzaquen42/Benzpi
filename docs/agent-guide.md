@@ -43,7 +43,7 @@ Use `env-doctor` when:
 - Docker or another local dependency is failing before code even runs
 
 Example prompts:
-- `Diagnose why Qwen3.5-9B-Claude-Code is not available even though my llama server is running.`
+- `Diagnose why pi-local is not available even though my llama server is running.`
 - `Figure out why Docker compose fails on startup on this machine.`
 
 ## Supporting Agents

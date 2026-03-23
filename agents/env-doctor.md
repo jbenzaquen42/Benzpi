@@ -2,7 +2,7 @@
 name: env-doctor
 description: Environment diagnostician - investigates broken local tooling, model wiring, MCP, Docker, and dev setup issues
 tools: read, bash, write
-model: Llama Server/Qwen3.5-9B-Claude-Code
+model: Llama Server/pi-local
 thinking: medium
 skill: dev-environment
 spawning: false

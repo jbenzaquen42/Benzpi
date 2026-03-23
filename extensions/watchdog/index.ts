@@ -124,11 +124,10 @@ There have been ${consecutiveInterventions} prior watchdog interventions.
 Recent activity:
 ${summary}`;
 
-  const candidates = typeof ctx?.modelRegistry?.getAvailable === "function"
-    ? [...(await ctx.modelRegistry.getAvailable())]
-        .filter((model: any) => ["Llama Server", "LM Studio"].includes(model.provider))
-        .map((model: any) => ({ provider: model.provider, model: model.id }))
-    : [];
+  const candidates = [
+    { provider: "Llama Server", model: "pi-local" },
+    { provider: "LM Studio", model: "pi-local" },
+  ];
   if (ctx?.model?.provider && ctx?.model?.id) {
     if (!candidates.some((candidate) => candidate.provider === ctx.model.provider && candidate.model === ctx.model.id)) {
       candidates.push({ provider: ctx.model.provider, model: ctx.model.id });
@@ -358,4 +357,3 @@ export default function (pi: ExtensionAPI) {
     },
   });
 }
-

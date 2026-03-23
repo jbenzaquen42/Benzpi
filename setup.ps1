@@ -71,12 +71,12 @@ function Set-ConfiguredBackend {
   $settingsPath = Join-Path $ConfigDir "settings.json"
   $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
   $settings.defaultProvider = $Provider
-  $settings.defaultModel = "Qwen3.5-9B-Claude-Code"
+  $settings.defaultModel = "pi-local"
   $settings | ConvertTo-Json -Depth 100 | Set-Content -Encoding utf8 $settingsPath
 
   Get-ChildItem (Join-Path $ConfigDir "agents") -Filter *.md | ForEach-Object {
     $content = Get-Content $_.FullName -Raw
-    $updated = [regex]::Replace($content, 'model:\s+.+?/[^\r\n]+', "model: $Provider/Qwen3.5-9B-Claude-Code", 1)
+    $updated = [regex]::Replace($content, 'model:\s+.+?/[^\r\n]+', "model: $Provider/pi-local", 1)
     if ($updated -ne $content) {
       Set-Content -Encoding utf8 $_.FullName $updated
     }
@@ -216,15 +216,15 @@ Write-Host ""
 if ($selectedProvider -eq "LM Studio") {
   Write-Host "Recommended LM Studio load commands:"
   Write-Host "  lms server start"
-  Write-Host "  lms load <your-chosen-local-model> --identifier Qwen3.5-9B-Claude-Code -c 32768"
+  Write-Host "  lms load <your-chosen-local-model> --identifier pi-local -c 32768"
   Write-Host ""
   Write-Host "Examples:"
-  Write-Host "  lms load huihui-qwen3-coder-30b-a3b-instruct-abliterated-i1 --identifier Qwen3.5-9B-Claude-Code -c 32768"
-  Write-Host "  lms load qwen3.5-9b-claude-code --identifier Qwen3.5-9B-Claude-Code -c 32768"
+  Write-Host "  lms load huihui-qwen3-coder-30b-a3b-instruct-abliterated-i1 --identifier pi-local -c 32768"
+  Write-Host "  lms load qwen3.5-9b-claude-code --identifier pi-local -c 32768"
 } else {
   Write-Host "Recommended llama server setup:"
   Write-Host "  Start llama-server with your preferred model and expose an OpenAI-compatible API on http://127.0.0.1:1234/v1"
-  Write-Host "  Keep the model name exposed as Qwen3.5-9B-Claude-Code if your launcher supports aliases, or keep a single model loaded."
+  Write-Host "  Keep the model name exposed as pi-local if your launcher supports aliases, or keep a single model loaded."
 }
 
 Write-Host ""
@@ -247,5 +247,5 @@ Write-Host "  Use planner-codex, reviewer-codex, or researcher-codex when you wa
 
 Write-Host ""
 Write-Host "Setup complete."
-Write-Host "Restart pi after your Qwen3.5-9B-Claude-Code local model is available through $selectedProvider."
+Write-Host "Restart pi after your pi-local local model is available through $selectedProvider."
 

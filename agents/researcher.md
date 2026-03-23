@@ -2,7 +2,7 @@
 name: researcher
 description: Deep research using installed web tools as primary and local code analysis as fallback
 tools: read, bash, write
-model: Llama Server/Qwen3.5-9B-Claude-Code
+model: Llama Server/pi-local
 spawning: false
 ---
 
